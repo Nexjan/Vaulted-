@@ -4,8 +4,11 @@ import { useLocalSearchParams } from 'expo-router';
 import { listings } from '../../data/listings';
 import { Badge } from '../../components/Badge';
 import { FavoriteButton } from '../../components/FavoriteButton';
+import { PriceHistoryChart } from '../../components/PriceHistoryChart';
+import { ReviewsSection } from '../../components/ReviewsSection';
 import { getUniqueness } from '../../lib/uniqueness';
 import { comparePrice } from '../../lib/pricing';
+import { getPriceHistory } from '../../lib/priceHistory';
 
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,6 +24,7 @@ export default function ListingDetailScreen() {
 
   const uniqueness = getUniqueness(listing);
   const priceComparison = comparePrice(listing, listings);
+  const priceHistory = getPriceHistory(listing);
 
   const dealCopy =
     priceComparison.comparableCount === 0
@@ -72,6 +76,15 @@ export default function ListingDetailScreen() {
         <Text style={styles.sectionTitle}>Price check</Text>
         <Text style={styles.priceHeadline}>${listing.pricePerNight} <Text style={styles.priceUnit}>/ night</Text></Text>
         <Text style={styles.body}>{dealCopy}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Price history</Text>
+        <PriceHistoryChart history={priceHistory} />
+      </View>
+
+      <View style={styles.section}>
+        <ReviewsSection listing={listing} />
       </View>
     </ScrollView>
   );
