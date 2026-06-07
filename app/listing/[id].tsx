@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { listings } from '../../data/listings';
 import { Badge } from '../../components/Badge';
+import { FavoriteButton } from '../../components/FavoriteButton';
 import { getUniqueness } from '../../lib/uniqueness';
 import { comparePrice } from '../../lib/pricing';
 
@@ -33,7 +34,8 @@ export default function ListingDetailScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.hero}>
-        <Text style={styles.heroEmoji}>{listing.emoji}</Text>
+        <Image source={{ uri: listing.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+        <FavoriteButton listingId={listing.id} style={styles.heroFavoriteButton} size={22} />
       </View>
 
       <View style={styles.section}>
@@ -86,11 +88,18 @@ const styles = StyleSheet.create({
   hero: {
     height: 260,
     backgroundColor: '#f3f1ee',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  heroEmoji: {
-    fontSize: 96,
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroFavoriteButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   section: {
     paddingHorizontal: 20,

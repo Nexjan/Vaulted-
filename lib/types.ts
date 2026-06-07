@@ -27,5 +27,6 @@ export interface Listing {
   reviewCount: number;
   maxGuests: number;
   emoji: string;
+  imageUrl: string;
   description: string;
 }

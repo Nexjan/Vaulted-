@@ -1,7 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Listing } from '../lib/types';
 import { Badge } from './Badge';
+import { FavoriteButton } from './FavoriteButton';
 
 interface Props {
   listing: Listing;
@@ -20,7 +21,8 @@ export function ListingCard({ listing, badge, footnote }: Props) {
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       <View style={styles.thumbnail}>
-        <Text style={styles.emoji}>{listing.emoji}</Text>
+        <Image source={{ uri: listing.imageUrl }} style={styles.image} resizeMode="cover" />
+        <FavoriteButton listingId={listing.id} style={styles.favoriteButton} />
         {badge ? <Badge label={badge.label} tone={badge.tone} style={styles.badge} /> : null}
       </View>
       <View style={styles.body}>
@@ -49,13 +51,17 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   thumbnail: {
-    height: 140,
+    height: 160,
     backgroundColor: '#f3f1ee',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  emoji: {
-    fontSize: 56,
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
   },
   badge: {
     position: 'absolute',

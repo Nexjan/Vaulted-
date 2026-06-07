@@ -31,6 +31,20 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="pricetag" color={color} size={size} />,
         }}
       />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: 'Map',
+          tabBarIcon: ({ color, size }) => <Ionicons name="map" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="saved"
+        options={{
+          title: 'Saved',
+          tabBarIcon: ({ color, size }) => <Ionicons name="heart" color={color} size={size} />,
+        }}
+      />
     </Tabs>
   );
 }

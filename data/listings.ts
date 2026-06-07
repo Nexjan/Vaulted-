@@ -13,6 +13,7 @@ export const listings: Listing[] = [
     reviewCount: 318,
     maxGuests: 2,
     emoji: '🌳',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l1/800/600',
     description: 'A hand-built treehouse suspended among Douglas firs, with a private soaking tub and skylight over the bed.',
   },
   {
@@ -27,6 +28,7 @@ export const listings: Listing[] = [
     reviewCount: 92,
     maxGuests: 4,
     emoji: '🗼',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l2/800/600',
     description: 'Stay inside a still-operating 1880s lighthouse perched on a rocky headland with 360° ocean views.',
   },
   {
@@ -41,6 +43,7 @@ export const listings: Listing[] = [
     reviewCount: 204,
     maxGuests: 3,
     emoji: '🛥️',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l3/800/600',
     description: 'Wake up to gentle river waves on a cozy two-story houseboat with a private dock and kayaks.',
   },
   {
@@ -55,6 +58,7 @@ export const listings: Listing[] = [
     reviewCount: 540,
     maxGuests: 4,
     emoji: '🏙️',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l4/800/600',
     description: 'Bright loft-style apartment a five-minute walk from restaurants, transit, and shops.',
   },
   {
@@ -69,6 +73,7 @@ export const listings: Listing[] = [
     reviewCount: 156,
     maxGuests: 2,
     emoji: '⛺',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l5/800/600',
     description: 'A felt-lined yurt on a working farm with a wood stove, fresh eggs each morning, and dark, starry skies.',
   },
   {
@@ -83,6 +88,7 @@ export const listings: Listing[] = [
     reviewCount: 87,
     maxGuests: 4,
     emoji: '🪨',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l6/800/600',
     description: 'A surprisingly luxurious home carved directly into a granite hillside, naturally insulated year-round.',
   },
   {
@@ -97,6 +103,7 @@ export const listings: Listing[] = [
     reviewCount: 412,
     maxGuests: 6,
     emoji: '🏡',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l7/800/600',
     description: 'A timber cabin with a wraparound porch overlooking the Blue Ridge Mountains.',
   },
   {
@@ -111,6 +118,7 @@ export const listings: Listing[] = [
     reviewCount: 271,
     maxGuests: 2,
     emoji: '🔺',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l8/800/600',
     description: 'A transparent-ceiling dome in the high desert, perfect for falling asleep under the Milky Way.',
   },
   {
@@ -125,6 +133,7 @@ export const listings: Listing[] = [
     reviewCount: 64,
     maxGuests: 2,
     emoji: '🚂',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l9/800/600',
     description: 'A lovingly restored 1940s train caboose parked on a quiet stretch of high desert.',
   },
   {
@@ -139,6 +148,7 @@ export const listings: Listing[] = [
     reviewCount: 133,
     maxGuests: 8,
     emoji: '🏖️',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l10/800/600',
     description: 'A sprawling modernist villa with an infinity pool overlooking the Joshua Tree boulders.',
   },
   {
@@ -153,6 +163,7 @@ export const listings: Listing[] = [
     reviewCount: 178,
     maxGuests: 2,
     emoji: '🌬️',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l11/800/600',
     description: 'A 19th-century windmill turned cliffside suite with sweeping views of the Aegean Sea.',
   },
   {
@@ -167,6 +178,7 @@ export const listings: Listing[] = [
     reviewCount: 389,
     maxGuests: 3,
     emoji: '🏠',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l12/800/600',
     description: 'A whitewashed apartment with a private terrace facing the famous Santorini sunset.',
   },
   {
@@ -181,6 +193,7 @@ export const listings: Listing[] = [
     reviewCount: 51,
     maxGuests: 2,
     emoji: '🏰',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l13/800/600',
     description: 'A spiral-stair tower room in a working 15th-century castle, complete with a four-poster bed.',
   },
   {
@@ -195,6 +208,7 @@ export const listings: Listing[] = [
     reviewCount: 122,
     maxGuests: 5,
     emoji: '⛪',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l14/800/600',
     description: 'A 19th-century chapel reimagined as an airy loft, with original stained-glass windows intact.',
   },
   {
@@ -209,6 +223,7 @@ export const listings: Listing[] = [
     reviewCount: 601,
     maxGuests: 4,
     emoji: '🏙️',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l15/800/600',
     description: 'A comfortable flat moments from the Royal Mile, ideal for exploring on foot.',
   },
   {
@@ -223,6 +238,7 @@ export const listings: Listing[] = [
     reviewCount: 76,
     maxGuests: 2,
     emoji: '❄️',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l16/800/600',
     description: 'Watch the aurora borealis dance overhead through a heated glass-ceiling igloo.',
   },
   {
@@ -237,6 +253,7 @@ export const listings: Listing[] = [
     reviewCount: 198,
     maxGuests: 5,
     emoji: '🏘️',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l17/800/600',
     description: 'A timber cabin on a frozen lake shore with a private wood-fired sauna.',
   },
   {
@@ -251,6 +268,7 @@ export const listings: Listing[] = [
     reviewCount: 145,
     maxGuests: 3,
     emoji: '📦',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l18/800/600',
     description: 'Three shipping containers stacked into a sleek live-work loft with a rooftop deck downtown.',
   },
   {
@@ -265,6 +283,7 @@ export const listings: Listing[] = [
     reviewCount: 327,
     maxGuests: 4,
     emoji: '🎸',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l19/800/600',
     description: 'A laid-back apartment two blocks from the best live-music venues in town.',
   },
   {
@@ -279,6 +298,7 @@ export const listings: Listing[] = [
     reviewCount: 211,
     maxGuests: 2,
     emoji: '🌌',
+    imageUrl: 'https://picsum.photos/seed/rare-stays-l20/800/600',
     description: 'A secluded yurt on a creek in the Texas Hill Country, with a wood-fired hot tub under the stars.',
   },
 ];
