@@ -38,7 +38,8 @@ const { height: WIN_H, width: WIN_W } = Dimensions.get('window');
 
 const TOP_LISTINGS = sortByUniqueness(listings).slice(0, 4);
 const HERO_IMG     = TOP_LISTINGS[0]?.imageUrls?.[0] ?? '';
-const CLOSING_IMG  = TOP_LISTINGS[3]?.imageUrls?.[0] ?? HERO_IMG;
+// Dedicated atmospheric URL — decoupled from listings so a bad listing image can't bleed through.
+const CLOSING_IMG  = 'https://loremflickr.com/800/600/ocean,night?lock=800';
 const TOTAL_STAYS  = listings.length;
 
 // CSS passthrough for web scroll-snap (RN Web forwards unknown style keys to the DOM)
@@ -400,8 +401,7 @@ function ClosingChapter({
         style={[StyleSheet.absoluteFill, { opacity: imgAlpha }]}
         resizeMode="cover"
         onLoad={() =>
-          Animated.timing(imgAlpha, { toValue: 1, duration: 900, useNativeDriver: true })
-            .start()
+          Animated.timing(imgAlpha, { toValue: 1, duration: 900, useNativeDriver: true }).start()
         }
       />
       <View style={styles.closingOverlay} />
