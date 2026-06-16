@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { listings } from '../../data/listings';
 import { sortByBestDeal } from '../../lib/pricing';
 import { useFavorites } from '../../lib/favorites';
+import { useTilt } from '../../hooks/useTilt';
 
 const BG = '#0A0A0A';
 const TEXT = '#F5F3EF';
@@ -37,54 +38,79 @@ export default function DealsScreen() {
 
         <View style={styles.divider} />
 
-        {/* ── List ── */}
-        {ranked.map((item, i) => {
-          const { percentDiff, tier, comparableAverage } = item.priceComparison;
-          const savings = Math.round(Math.abs(percentDiff));
-          const active = isFavorite(item.id);
-          const num = String(i + 1).padStart(2, '0');
-
-          return (
-            <View key={item.id}>
-              <Pressable
-                onPress={() => router.push(`/listing/${item.id}`)}
-                style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-              >
-                <Text style={styles.rowNumber}>{num}</Text>
-                <Image source={{ uri: item.imageUrl }} style={styles.rowImage} resizeMode="cover" />
-                <View style={styles.rowBody}>
-                  <Text style={styles.rowTitle} numberOfLines={2}>{item.title}</Text>
-                  <Text style={styles.rowLocation}>
-                    {item.city.toUpperCase()} · {item.propertyType.toUpperCase()}
-                  </Text>
-                  <View style={styles.rowMeta}>
-                    {tier === 'great-deal' ? (
-                      <View style={styles.savingsBadge}>
-                        <Text style={styles.savingsText}>{savings}% BELOW AVG</Text>
-                      </View>
-                    ) : (
-                      <Text style={styles.avgText}>${Math.round(comparableAverage)} avg</Text>
-                    )}
-                  </View>
-                </View>
-                <View style={styles.rowRight}>
-                  <Text style={styles.rowPrice}>${item.pricePerNight}<Text style={styles.rowUnit}>/nt</Text></Text>
-                  <Pressable
-                    onPress={(e) => { e.stopPropagation(); toggleFavorite(item.id); }}
-                    hitSlop={8}
-                    style={styles.rowHeart}
-                  >
-                    <Ionicons name={active ? 'heart' : 'heart-outline'} size={16} color={active ? GOLD : MUTED} />
-                  </Pressable>
-                </View>
-              </Pressable>
-              <View style={styles.divider} />
-            </View>
-          );
-        })}
+        {ranked.map((item, i) => (
+          <DealsRow
+            key={item.id}
+            item={item}
+            index={i}
+            router={router}
+            isFavorite={isFavorite}
+            toggleFavorite={toggleFavorite}
+          />
+        ))}
 
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function DealsRow({
+  item, index, router, isFavorite, toggleFavorite,
+}: {
+  item: any;
+  index: number;
+  router: ReturnType<typeof useRouter>;
+  isFavorite: (id: string) => boolean;
+  toggleFavorite: (id: string) => void;
+}) {
+  const { percentDiff, tier, comparableAverage } = item.priceComparison;
+  const savings = Math.round(Math.abs(percentDiff));
+  const active = isFavorite(item.id);
+  const num = String(index + 1).padStart(2, '0');
+  const { webHandlers, tiltStyle, glow } = useTilt();
+
+  return (
+    <View>
+      <Pressable
+        onPress={() => router.push(`/listing/${item.id}`)}
+        style={styles.rowOuter}
+        {...(webHandlers as any)}
+      >
+        {({ pressed }) => (
+          <Animated.View style={[styles.row, tiltStyle, pressed && styles.rowPressed]}>
+            <Text style={styles.rowNumber}>{num}</Text>
+            <Image source={{ uri: item.imageUrl }} style={styles.rowImage} resizeMode="cover" />
+            <View style={styles.rowBody}>
+              <Text style={styles.rowTitle} numberOfLines={2}>{item.title}</Text>
+              <Text style={styles.rowLocation}>
+                {item.city.toUpperCase()} · {item.propertyType.toUpperCase()}
+              </Text>
+              <View style={styles.rowMeta}>
+                {tier === 'great-deal' ? (
+                  <View style={styles.savingsBadge}>
+                    <Text style={styles.savingsText}>{savings}% BELOW AVG</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.avgText}>${Math.round(comparableAverage)} avg</Text>
+                )}
+              </View>
+            </View>
+            <View style={styles.rowRight}>
+              <Text style={styles.rowPrice}>${item.pricePerNight}<Text style={styles.rowUnit}>/nt</Text></Text>
+              <Pressable
+                onPress={(e) => { e.stopPropagation(); toggleFavorite(item.id); }}
+                hitSlop={8}
+                style={styles.rowHeart}
+              >
+                <Ionicons name={active ? 'heart' : 'heart-outline'} size={16} color={active ? GOLD : MUTED} />
+              </Pressable>
+            </View>
+            <Animated.View pointerEvents="none" style={[styles.rowGlow, { opacity: glow }]} />
+          </Animated.View>
+        )}
+      </Pressable>
+      <View style={styles.divider} />
+    </View>
   );
 }
 
@@ -135,6 +161,7 @@ const styles = StyleSheet.create({
   },
 
   // Rows
+  rowOuter: {},
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -144,6 +171,15 @@ const styles = StyleSheet.create({
   },
   rowPressed: {
     backgroundColor: '#111111',
+  },
+  rowGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(200,168,107,0.6)',
   },
   rowNumber: {
     width: 32,
