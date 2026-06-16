@@ -5,6 +5,12 @@ import { getMockReviews } from '../lib/reviews';
 import { useUserReviews } from '../lib/userReviews';
 import { StarRating, StarRatingInput } from './StarRating';
 
+const GOLD = '#C8A86B';
+const TEXT = '#F5F3EF';
+const MUTED = '#555555';
+const DIVIDER = '#1E1E1E';
+const SURFACE = '#141414';
+
 interface DisplayReview {
   id: string;
   author: string;
@@ -46,27 +52,29 @@ export function ReviewsSection({ listing }: Props) {
 
   return (
     <View>
-      <Text style={styles.sectionTitle}>Reviews</Text>
+      <Text style={styles.sectionTitle}>REVIEWS</Text>
 
       {allReviews.map((review) => (
         <View key={review.id} style={styles.reviewCard}>
           <View style={styles.reviewHeader}>
-            <Text style={styles.author}>{review.author}</Text>
-            <Text style={styles.timeAgo}>{review.timeAgo}</Text>
+            <View style={styles.reviewMeta}>
+              <Text style={styles.author}>{review.author}</Text>
+              <Text style={styles.timeAgo}>{review.timeAgo.toUpperCase()}</Text>
+            </View>
+            <StarRating rating={review.rating} size={12} />
           </View>
-          <StarRating rating={review.rating} />
           <Text style={styles.comment}>{review.comment}</Text>
         </View>
       ))}
 
       <View style={styles.form}>
-        <Text style={styles.formTitle}>Leave a review</Text>
-        <StarRatingInput value={rating} onChange={setRating} />
+        <Text style={styles.formTitle}>LEAVE A REVIEW</Text>
+        <StarRatingInput value={rating} onChange={setRating} size={26} />
         <TextInput
           value={comment}
           onChangeText={setComment}
           placeholder="Share what made your stay memorable..."
-          placeholderTextColor="#9a9a9a"
+          placeholderTextColor={MUTED}
           style={styles.input}
           multiline
           numberOfLines={3}
@@ -80,7 +88,9 @@ export function ReviewsSection({ listing }: Props) {
             pressed && comment.trim() && styles.submitButtonPressed,
           ]}
         >
-          <Text style={styles.submitLabel}>Post review</Text>
+          <Text style={[styles.submitLabel, !comment.trim() && styles.submitLabelDisabled]}>
+            POST REVIEW
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -89,78 +99,90 @@ export function ReviewsSection({ listing }: Props) {
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 9,
     fontWeight: '700',
-    color: '#222',
-    marginBottom: 12,
+    color: GOLD,
+    letterSpacing: 2.5,
+    marginBottom: 16,
   },
   reviewCard: {
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: DIVIDER,
   },
   reviewHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
+  },
+  reviewMeta: {
+    gap: 2,
   },
   author: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#222',
+    color: TEXT,
+    letterSpacing: 0.5,
   },
   timeAgo: {
-    fontSize: 12,
-    color: '#9a9a9a',
+    fontSize: 9,
+    color: MUTED,
+    letterSpacing: 1.5,
   },
   comment: {
-    marginTop: 6,
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 20,
-    color: '#444',
+    color: '#888888',
   },
   form: {
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 20,
+    paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: DIVIDER,
   },
   formTitle: {
-    fontSize: 15,
+    fontSize: 9,
     fontWeight: '700',
-    color: '#222',
-    marginBottom: 10,
+    color: GOLD,
+    letterSpacing: 2.5,
+    marginBottom: 14,
   },
   input: {
-    marginTop: 12,
+    marginTop: 14,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
+    borderColor: '#2A2A2A',
+    borderRadius: 2,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    fontSize: 14,
-    backgroundColor: '#fff',
+    fontSize: 13,
+    backgroundColor: SURFACE,
+    color: TEXT,
     minHeight: 80,
     textAlignVertical: 'top',
   },
   submitButton: {
     marginTop: 12,
     alignSelf: 'flex-start',
-    backgroundColor: '#222',
-    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: GOLD,
+    borderRadius: 1,
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
   submitButtonDisabled: {
-    backgroundColor: '#ccc',
+    borderColor: '#2A2A2A',
   },
   submitButtonPressed: {
-    opacity: 0.85,
+    backgroundColor: GOLD,
   },
   submitLabel: {
-    color: '#fff',
+    color: GOLD,
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 10,
+    letterSpacing: 2,
+  },
+  submitLabelDisabled: {
+    color: MUTED,
   },
 });

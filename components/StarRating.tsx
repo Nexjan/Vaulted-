@@ -8,7 +8,7 @@ interface DisplayProps {
 }
 
 /** Read-only row of filled/empty stars representing a rating out of 5. */
-export function StarRating({ rating, size = 14, color = '#5b3cc4' }: DisplayProps) {
+export function StarRating({ rating, size = 14, color = '#C8A86B' }: DisplayProps) {
   const rounded = Math.round(rating);
   return (
     <View style={styles.row}>

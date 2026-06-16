@@ -12,7 +12,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="listing/[id]"
-              options={{ title: '', headerTransparent: true, headerTintColor: '#222' }}
+              options={{ title: '', headerTransparent: true, headerTintColor: '#F5F3EF' }}
             />
           </Stack>
         </UserReviewsProvider>

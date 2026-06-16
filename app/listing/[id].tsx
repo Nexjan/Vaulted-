@@ -1,23 +1,31 @@
 import { useMemo } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { listings } from '../../data/listings';
-import { Badge } from '../../components/Badge';
-import { FavoriteButton } from '../../components/FavoriteButton';
 import { PriceHistoryChart } from '../../components/PriceHistoryChart';
 import { ReviewsSection } from '../../components/ReviewsSection';
 import { getUniqueness } from '../../lib/uniqueness';
 import { comparePrice } from '../../lib/pricing';
 import { getPriceHistory } from '../../lib/priceHistory';
+import { useFavorites } from '../../lib/favorites';
+
+const BG = '#0A0A0A';
+const TEXT = '#F5F3EF';
+const GOLD = '#C8A86B';
+const MUTED = '#555555';
+const DIVIDER = '#1E1E1E';
+const SURFACE = '#141414';
 
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const listing = useMemo(() => listings.find((item) => item.id === id), [id]);
 
   if (!listing) {
     return (
       <View style={styles.notFound}>
-        <Text style={styles.notFoundText}>This listing could not be found.</Text>
+        <Text style={styles.notFoundText}>LISTING NOT FOUND</Text>
       </View>
     );
   }
@@ -25,67 +33,112 @@ export default function ListingDetailScreen() {
   const uniqueness = getUniqueness(listing);
   const priceComparison = comparePrice(listing, listings);
   const priceHistory = getPriceHistory(listing);
+  const active = isFavorite(listing.id);
 
+  const dealTier = priceComparison.tier;
   const dealCopy =
     priceComparison.comparableCount === 0
-      ? "We don't have enough comparable stays in this city yet to judge the price."
-      : priceComparison.tier === 'great-deal'
-        ? `This is priced ${Math.round(Math.abs(priceComparison.percentDiff))}% below the ${Math.round(priceComparison.comparableAverage)}/night average for similar stays in ${listing.city} — a great deal.`
-        : priceComparison.tier === 'above-average'
-          ? `This runs ${Math.round(Math.abs(priceComparison.percentDiff))}% above the ${Math.round(priceComparison.comparableAverage)}/night average for similar stays in ${listing.city}.`
-          : `This is priced close to the ${Math.round(priceComparison.comparableAverage)}/night average for similar stays in ${listing.city} — a fair price.`;
+      ? "Insufficient comparable stays in this city to benchmark the price."
+      : dealTier === 'great-deal'
+        ? `Priced ${Math.round(Math.abs(priceComparison.percentDiff))}% below the $${Math.round(priceComparison.comparableAverage)}/night city average — a great deal.`
+        : dealTier === 'above-average'
+          ? `Runs ${Math.round(Math.abs(priceComparison.percentDiff))}% above the $${Math.round(priceComparison.comparableAverage)}/night city average.`
+          : `Close to the $${Math.round(priceComparison.comparableAverage)}/night city average — a fair price.`;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+
+      {/* ── Hero image ── */}
       <View style={styles.hero}>
         <Image source={{ uri: listing.imageUrl }} style={styles.heroImage} resizeMode="cover" />
-        <FavoriteButton listingId={listing.id} style={styles.heroFavoriteButton} size={22} />
+        <View style={styles.heroOverlay} />
+        <Pressable
+          onPress={() => toggleFavorite(listing.id)}
+          hitSlop={8}
+          style={styles.heartBtn}
+        >
+          <Ionicons name={active ? 'heart' : 'heart-outline'} size={22} color={active ? GOLD : TEXT} />
+        </Pressable>
+        <View style={styles.heroBottom}>
+          <Text style={styles.heroType}>
+            {listing.propertyType.toUpperCase()} · {listing.city.toUpperCase()}, {listing.country.toUpperCase()}
+          </Text>
+        </View>
       </View>
 
-      <View style={styles.section}>
+      {/* ── Title & meta ── */}
+      <View style={styles.titleBlock}>
         <Text style={styles.title}>{listing.title}</Text>
-        <Text style={styles.location}>{listing.city}, {listing.country} · {listing.propertyType}</Text>
-        <Text style={styles.meta}>★ {listing.rating.toFixed(2)} · {listing.reviewCount} reviews · Up to {listing.maxGuests} guests</Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.metaItem}>★ {listing.rating.toFixed(2)}</Text>
+          <Text style={styles.metaDot}>·</Text>
+          <Text style={styles.metaItem}>{listing.reviewCount} reviews</Text>
+          <Text style={styles.metaDot}>·</Text>
+          <Text style={styles.metaItem}>Up to {listing.maxGuests} guests</Text>
+        </View>
       </View>
 
-      <View style={styles.badgeRow}>
-        <Badge label={`Rarity score ${uniqueness.score}/100`} tone="rare" />
-        {priceComparison.tier === 'great-deal' ? <Badge label="Great deal" tone="deal" /> : null}
-      </View>
+      <View style={styles.divider} />
 
+      {/* ── Rarity ── */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About this place</Text>
-        <Text style={styles.body}>{listing.description}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>What makes it rare</Text>
+        <Text style={styles.sectionLabel}>RARITY SCORE</Text>
+        <Text style={styles.rarityScore}>
+          {uniqueness.score}
+          <Text style={styles.rarityTotal}> / 100</Text>
+        </Text>
         {uniqueness.reasons.map((reason) => (
-          <Text key={reason} style={styles.bullet}>• {reason}</Text>
+          <Text key={reason} style={styles.bullet}>— {reason}</Text>
         ))}
         <View style={styles.tagRow}>
           {listing.tags.map((tag) => (
             <View key={tag} style={styles.tag}>
-              <Text style={styles.tagText}>{tag}</Text>
+              <Text style={styles.tagText}>{tag.toUpperCase()}</Text>
             </View>
           ))}
         </View>
       </View>
 
+      <View style={styles.divider} />
+
+      {/* ── About ── */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Price check</Text>
-        <Text style={styles.priceHeadline}>${listing.pricePerNight} <Text style={styles.priceUnit}>/ night</Text></Text>
-        <Text style={styles.body}>{dealCopy}</Text>
+        <Text style={styles.sectionLabel}>ABOUT THIS PLACE</Text>
+        <Text style={styles.body}>{listing.description}</Text>
       </View>
 
+      <View style={styles.divider} />
+
+      {/* ── Price check ── */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Price history</Text>
+        <Text style={styles.sectionLabel}>PRICE CHECK</Text>
+        <View style={styles.priceRow}>
+          <Text style={styles.price}>${listing.pricePerNight}</Text>
+          <Text style={styles.priceUnit}>/ night</Text>
+          {dealTier === 'great-deal' && (
+            <View style={styles.dealBadge}>
+              <Text style={styles.dealBadgeText}>GREAT DEAL</Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.dealCopy}>{dealCopy}</Text>
+      </View>
+
+      <View style={styles.divider} />
+
+      {/* ── Price history ── */}
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>PRICE HISTORY</Text>
         <PriceHistoryChart history={priceHistory} />
       </View>
 
+      <View style={styles.divider} />
+
+      {/* ── Reviews ── */}
       <View style={styles.section}>
         <ReviewsSection listing={listing} />
       </View>
+
     </ScrollView>
   );
 }
@@ -93,103 +146,207 @@ export default function ListingDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: BG,
   },
   content: {
-    paddingBottom: 48,
+    paddingBottom: 64,
   },
+
+  // Hero
   hero: {
-    height: 260,
-    backgroundColor: '#f3f1ee',
+    height: 340,
+    backgroundColor: SURFACE,
   },
   heroImage: {
-    width: '100%',
-    height: '100%',
-  },
-  heroFavoriteButton: {
     position: 'absolute',
-    top: 16,
-    right: 16,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  heroOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  heartBtn: {
+    position: 'absolute',
+    top: 56,
+    right: 20,
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: 'rgba(10,10,10,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  section: {
+  heroBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    paddingTop: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  heroType: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: GOLD,
+    letterSpacing: 2.5,
+  },
+
+  // Title block
+  titleBlock: {
     paddingHorizontal: 20,
     paddingTop: 20,
+    paddingBottom: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '800',
-    color: '#222',
+    color: TEXT,
+    fontFamily: 'Georgia',
+    lineHeight: 34,
+    letterSpacing: -0.5,
   },
-  location: {
-    marginTop: 4,
-    fontSize: 14,
-    color: '#717171',
-  },
-  meta: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#222',
-  },
-  badgeRow: {
+  metaRow: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+  },
+  metaItem: {
+    fontSize: 12,
+    color: MUTED,
+    letterSpacing: 0.3,
+  },
+  metaDot: {
+    fontSize: 12,
+    color: '#333',
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: DIVIDER,
+  },
+
+  // Sections
+  section: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 22,
+    paddingBottom: 22,
   },
-  sectionTitle: {
-    fontSize: 18,
+  sectionLabel: {
+    fontSize: 9,
     fontWeight: '700',
-    color: '#222',
-    marginBottom: 8,
+    color: GOLD,
+    letterSpacing: 2.5,
+    marginBottom: 14,
   },
-  body: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: '#444',
+
+  // Rarity
+  rarityScore: {
+    fontSize: 40,
+    fontWeight: '900',
+    color: GOLD,
+    fontFamily: 'Georgia',
+    letterSpacing: -1,
+    lineHeight: 44,
+    marginBottom: 14,
+  },
+  rarityTotal: {
+    fontSize: 20,
+    fontWeight: '400',
+    color: MUTED,
   },
   bullet: {
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 22,
-    color: '#444',
+    color: '#888',
   },
   tagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 12,
+    marginTop: 14,
   },
   tag: {
-    backgroundColor: '#f3f1ee',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    borderRadius: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   tagText: {
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '600',
-    color: '#5b3cc4',
+    color: MUTED,
+    letterSpacing: 1.5,
   },
-  priceHeadline: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#222',
-    marginBottom: 8,
+
+  // Body text
+  body: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#888888',
+  },
+
+  // Price
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    marginBottom: 10,
+  },
+  price: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: TEXT,
+    fontFamily: 'Georgia',
+    letterSpacing: -1,
   },
   priceUnit: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#717171',
+    fontSize: 13,
+    color: MUTED,
   },
+  dealBadge: {
+    borderWidth: 1,
+    borderColor: '#5DA87A',
+    borderRadius: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginLeft: 4,
+    alignSelf: 'flex-end',
+    marginBottom: 4,
+  },
+  dealBadgeText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#5DA87A',
+    letterSpacing: 1.5,
+  },
+  dealCopy: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: MUTED,
+  },
+
+  // Not found
   notFound: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: BG,
   },
   notFoundText: {
-    fontSize: 16,
-    color: '#717171',
+    fontSize: 10,
+    fontWeight: '700',
+    color: MUTED,
+    letterSpacing: 2.5,
   },
 });

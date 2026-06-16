@@ -2,6 +2,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PriceHistory } from '../lib/priceHistory';
 
 const TRACK_HEIGHT = 96;
+const GOLD = '#C8A86B';
+const MUTED = '#555555';
+const TEXT = '#F5F3EF';
 
 interface Props {
   history: PriceHistory;
@@ -14,9 +17,9 @@ const TREND_COPY: Record<PriceHistory['trend'], (percent: number) => string> = {
 };
 
 const TREND_STYLE: Record<PriceHistory['trend'], { icon: string; color: string }> = {
-  down: { icon: '↓', color: '#0a8a4a' },
-  up: { icon: '↑', color: '#b23b3b' },
-  flat: { icon: '→', color: '#717171' },
+  down: { icon: '↓', color: '#5DA87A' },
+  up: { icon: '↑', color: '#C0604A' },
+  flat: { icon: '→', color: MUTED },
 };
 
 export function PriceHistoryChart({ history }: Props) {
@@ -44,7 +47,7 @@ export function PriceHistoryChart({ history }: Props) {
 
           return (
             <View key={point.label} style={styles.column}>
-              <Text style={styles.value}>${point.price}</Text>
+              <Text style={[styles.value, isLatest && styles.valueLatest]}>${point.price}</Text>
               <View style={styles.track}>
                 <View style={[styles.bar, { height: barHeight }, isLatest && styles.barLatest]} />
               </View>
@@ -62,17 +65,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   trendIcon: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
   },
   summaryText: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#444',
+    fontSize: 13,
+    lineHeight: 19,
+    color: MUTED,
   },
   chart: {
     flexDirection: 'row',
@@ -84,31 +87,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   value: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
-    color: '#717171',
+    color: MUTED,
     marginBottom: 4,
+  },
+  valueLatest: {
+    color: GOLD,
   },
   track: {
     height: TRACK_HEIGHT,
-    width: 18,
+    width: 16,
     justifyContent: 'flex-end',
   },
   bar: {
     width: '100%',
-    borderRadius: 6,
-    backgroundColor: '#d8d2ea',
+    borderRadius: 2,
+    backgroundColor: '#2A2A2A',
   },
   barLatest: {
-    backgroundColor: '#5b3cc4',
+    backgroundColor: GOLD,
   },
   label: {
     marginTop: 6,
-    fontSize: 12,
-    color: '#9a9a9a',
+    fontSize: 11,
+    color: MUTED,
   },
   labelLatest: {
-    color: '#222',
+    color: TEXT,
     fontWeight: '700',
   },
 });
