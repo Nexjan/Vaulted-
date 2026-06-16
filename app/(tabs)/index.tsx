@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { useVault } from '../../lib/vaultContext';
+import { useOnboarding } from '../../lib/onboarding';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -198,6 +199,15 @@ export default function SearchScreen() {
   const toggleVibe = (id: VibeId) =>
     setSelectedVibes((prev) => prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]);
   const { vaultDone } = useVault();
+  const { prefs } = useOnboarding();
+  const prefsApplied = useRef(false);
+
+  useEffect(() => {
+    if (!prefs || prefsApplied.current) return;
+    prefsApplied.current = true;
+    if (prefs.vibeIds.length > 0) setSelectedVibes(prefs.vibeIds as VibeId[]);
+    if (prefs.maxPrice !== null) setMaxPrice(prefs.maxPrice);
+  }, [prefs]);
 
   // ── Wordmark unlock-reveal animation ────────────────────────────────────────
   const letterAnims = useRef(

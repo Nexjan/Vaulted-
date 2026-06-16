@@ -8,6 +8,7 @@ import { useFavorites } from '../../lib/favorites';
 import { getUniqueness } from '../../lib/uniqueness';
 import { Listing } from '../../lib/types';
 import { SkeletonBlock } from '../../components/Skeleton';
+import { usePriceAlerts, getPriceDrop, PriceDrop } from '../../lib/priceAlerts';
 
 const REDUCE_MOTION =
   Platform.OS === 'web' &&
@@ -21,7 +22,7 @@ const MUTED = '#555555';
 const DIVIDER = '#1E1E1E';
 const SURFACE = '#141414';
 
-function VaultCard({ listing, index }: { listing: Listing; index: number }) {
+function VaultCard({ listing, index, drop }: { listing: Listing; index: number; drop: PriceDrop | null }) {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
   const uniqueness = getUniqueness(listing);
@@ -79,7 +80,7 @@ function VaultCard({ listing, index }: { listing: Listing; index: number }) {
 
   const rotateX = tiltX.interpolate({ inputRange: [-10, 10], outputRange: ['-10deg', '10deg'] });
   const rotateY = tiltY.interpolate({ inputRange: [-10, 10], outputRange: ['-10deg', '10deg'] });
-  const serial = `VLT-${listing.id.padStart(4, '0')}`;
+  const serial = `VLT-${listing.id.replace(/\D/g, '').padStart(4, '0')}`;
 
   return (
     <Animated.View style={[styles.cardOuter, { opacity: entranceOpacity, transform: [{ scale: entranceScale }] }]}>
@@ -91,7 +92,7 @@ function VaultCard({ listing, index }: { listing: Listing; index: number }) {
         <Animated.View style={[styles.card, { transform: [{ perspective: 600 }, { rotateX }, { rotateY }] }]}>
 
           {/* Gold accent bar */}
-          <View style={styles.accentBar} />
+          <View style={[styles.accentBar, drop && styles.accentBarDrop]} />
 
           {/* Image */}
           <View style={styles.imageWrap}>
@@ -108,6 +109,11 @@ function VaultCard({ listing, index }: { listing: Listing; index: number }) {
             <View style={styles.serialTag}>
               <Text style={styles.serialText}>{serial}</Text>
             </View>
+            {drop && (
+              <View style={styles.dropBadge}>
+                <Text style={styles.dropBadgeText}>▼ {drop.pctOff}% PRICE DROP</Text>
+              </View>
+            )}
           </View>
 
           {/* Body */}
@@ -118,9 +124,18 @@ function VaultCard({ listing, index }: { listing: Listing; index: number }) {
             </Text>
             <View style={styles.cardMeta}>
               <Text style={styles.cardRarity}>◆ {uniqueness.score}</Text>
-              <Text style={styles.cardPrice}>
-                ${listing.pricePerNight}<Text style={styles.cardUnit}>/nt</Text>
-              </Text>
+              {drop ? (
+                <View style={styles.priceGroup}>
+                  <Text style={styles.cardPriceDrop}>
+                    ${drop.live}<Text style={styles.cardUnit}>/nt</Text>
+                  </Text>
+                  <Text style={styles.priceWas}>${drop.lastSeen}</Text>
+                </View>
+              ) : (
+                <Text style={styles.cardPrice}>
+                  ${listing.pricePerNight}<Text style={styles.cardUnit}>/nt</Text>
+                </Text>
+              )}
               <Pressable
                 onPress={(e) => { e.stopPropagation(); toggleFavorite(listing.id); }}
                 hitSlop={8}
@@ -142,6 +157,7 @@ function VaultCard({ listing, index }: { listing: Listing; index: number }) {
 
 export default function SavedScreen() {
   const { favoriteIds, isLoaded } = useFavorites();
+  const { alerts, recordPrice, isLoaded: alertsLoaded } = usePriceAlerts();
 
   const vaulted = useMemo(
     () => listings.filter((listing) => favoriteIds.includes(listing.id)),
@@ -149,6 +165,25 @@ export default function SavedScreen() {
   );
 
   const totalValue = vaulted.reduce((sum, l) => sum + l.pricePerNight, 0);
+
+  // Record base price the first time each item is seen in the vault
+  useEffect(() => {
+    if (!alertsLoaded) return;
+    vaulted.forEach((listing) => recordPrice(listing.id, listing.pricePerNight));
+  }, [vaulted, alertsLoaded]);
+
+  // Compute price drops for display
+  const priceDrops = useMemo<Record<string, PriceDrop | null>>(() => {
+    if (!alertsLoaded) return {};
+    return Object.fromEntries(
+      vaulted.map((listing) => {
+        const lastSeen = alerts[listing.id];
+        return [listing.id, lastSeen !== undefined ? getPriceDrop(listing, lastSeen) : null];
+      }),
+    );
+  }, [vaulted, alerts, alertsLoaded]);
+
+  const anyDrops = Object.values(priceDrops).some(Boolean);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -172,6 +207,14 @@ export default function SavedScreen() {
 
         <View style={styles.divider} />
 
+        {/* Price-drop banner */}
+        {anyDrops && isLoaded && (
+          <View style={styles.dropBanner}>
+            <Ionicons name="trending-down" size={13} color={GOLD} />
+            <Text style={styles.dropBannerText}>A stay in your vault just dropped in price.</Text>
+          </View>
+        )}
+
         {/* Cards or empty state */}
         {isLoaded && vaulted.length === 0 ? (
           <View style={styles.empty}>
@@ -182,7 +225,12 @@ export default function SavedScreen() {
         ) : (
           <View style={styles.cards}>
             {vaulted.map((listing, i) => (
-              <VaultCard key={listing.id} listing={listing} index={i} />
+              <VaultCard
+                key={listing.id}
+                listing={listing}
+                index={i}
+                drop={priceDrops[listing.id] ?? null}
+              />
             ))}
           </View>
         )}
@@ -252,6 +300,24 @@ const styles = StyleSheet.create({
     backgroundColor: DIVIDER,
   },
 
+  // Price-drop banner
+  dropBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: DIVIDER,
+    backgroundColor: 'rgba(200,168,107,0.07)',
+  },
+  dropBannerText: {
+    fontSize: 12,
+    color: GOLD,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+
   // Cards layout
   cards: {
     paddingHorizontal: 20,
@@ -270,6 +336,9 @@ const styles = StyleSheet.create({
   accentBar: {
     height: 2,
     backgroundColor: GOLD,
+  },
+  accentBarDrop: {
+    backgroundColor: '#5DA87A',
   },
   imageWrap: {
     height: 175,
@@ -296,6 +365,22 @@ const styles = StyleSheet.create({
     color: GOLD,
     letterSpacing: 2,
     fontFamily: 'Georgia',
+  },
+  dropBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 12,
+    backgroundColor: 'rgba(10,10,10,0.82)',
+    borderWidth: 1,
+    borderColor: '#5DA87A',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  dropBadgeText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#5DA87A',
+    letterSpacing: 1.5,
   },
   cardBody: {
     padding: 14,
@@ -337,6 +422,21 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '400',
     color: MUTED,
+  },
+  priceGroup: {
+    flex: 1,
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  cardPriceDrop: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#5DA87A',
+  },
+  priceWas: {
+    fontSize: 10,
+    color: MUTED,
+    textDecorationLine: 'line-through',
   },
   heartBtn: {
     padding: 4,
