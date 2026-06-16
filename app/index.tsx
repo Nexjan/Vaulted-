@@ -15,6 +15,7 @@ import { listings } from '../lib/listingsService';
 import { sortByUniqueness, getUniqueness } from '../lib/uniqueness';
 import { Listing } from '../lib/types';
 import { SkeletonBlock } from '../components/Skeleton';
+import { useAuth } from '../lib/auth';
 
 const REDUCE_MOTION =
   Platform.OS === 'web' &&
@@ -41,6 +42,19 @@ const HERO_IMG     = TOP_LISTINGS[0]?.imageUrls?.[0] ?? '';
 // Dedicated atmospheric URL — decoupled from listings so a bad listing image can't bleed through.
 const CLOSING_IMG  = 'https://loremflickr.com/800/600/ocean,night?lock=800';
 const TOTAL_STAYS  = listings.length;
+
+// ─── returning-user helpers ────────────────────────────────────────────────────
+const VAULT_KEY = 'vaulted_entered';
+
+function hasEnteredBefore(): boolean {
+  if (Platform.OS !== 'web') return false;
+  try { return typeof localStorage !== 'undefined' && !!localStorage.getItem(VAULT_KEY); } catch { return false; }
+}
+
+function markEntered(): void {
+  if (Platform.OS !== 'web') return;
+  try { if (typeof localStorage !== 'undefined') localStorage.setItem(VAULT_KEY, '1'); } catch {}
+}
 
 // CSS passthrough for web scroll-snap (RN Web forwards unknown style keys to the DOM)
 const WEB_SNAP_CONTAINER = Platform.OS === 'web' && !REDUCE_MOTION
@@ -116,9 +130,20 @@ function useTilt() {
 
 // ─── root ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
-  const router    = useRouter();
+  const router                    = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [scrollVal, setScrollVal] = useState(0);
-  const enterApp  = useCallback(() => router.push('/search'), [router]);
+
+  const enterApp = useCallback(() => {
+    markEntered();
+    router.push('/search');
+  }, [router]);
+
+  // Logged-in users and returning users skip the cinematic entirely.
+  useEffect(() => {
+    if (authLoading) return;
+    if (user || hasEnteredBefore()) router.replace('/search');
+  }, [authLoading, user]);
 
   // On web: prevent document body from double-scrolling
   useEffect(() => {
@@ -128,19 +153,26 @@ export default function LandingPage() {
     return () => { document.body.style.overflow = prev; };
   }, []);
 
+  // Hold until auth resolves — prevents door animation starting and aborting mid-way
+  if (authLoading) return <View style={{ flex: 1, backgroundColor: BG }} />;
+
   return (
-    <ScrollView
-      style={[styles.root, WEB_SNAP_CONTAINER]}
-      contentContainerStyle={styles.rootContent}
-      showsVerticalScrollIndicator={false}
-      scrollEventThrottle={16}
-      onScroll={(e) => setScrollVal(e.nativeEvent.contentOffset.y)}
-    >
-      <HeroChapter onEnter={enterApp} />
-      <PhilosophyChapter scrollVal={scrollVal} />
-      <CollectionChapter scrollVal={scrollVal} onEnter={enterApp} />
-      <ClosingChapter scrollVal={scrollVal} onEnter={enterApp} />
-    </ScrollView>
+    <View style={{ flex: 1, backgroundColor: BG }}>
+      <ScrollView
+        style={[styles.root, WEB_SNAP_CONTAINER]}
+        contentContainerStyle={styles.rootContent}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={(e) => setScrollVal(e.nativeEvent.contentOffset.y)}
+      >
+        <HeroChapter onEnter={enterApp} />
+        <PhilosophyChapter scrollVal={scrollVal} />
+        <CollectionChapter scrollVal={scrollVal} onEnter={enterApp} />
+        <ClosingChapter scrollVal={scrollVal} onEnter={enterApp} />
+      </ScrollView>
+      {/* Persistent skip — fixed top-right, visible on every chapter */}
+      <SkipLink onPress={enterApp} />
+    </View>
   );
 }
 
@@ -425,6 +457,25 @@ function ClosingChapter({
   );
 }
 
+// ─── persistent skip link (fixed top-right across all chapters) ──────────────
+function SkipLink({ onPress }: { onPress: () => void }) {
+  // On web we can use position:fixed via RN Web's unknown-prop passthrough so
+  // the link stays pinned to the viewport regardless of scroll position.
+  const posStyle = Platform.OS === 'web'
+    ? ({ position: 'fixed', top: 20, right: 24, zIndex: 200 } as any)
+    : { position: 'absolute', top: 20, right: 24, zIndex: 200 };
+
+  return (
+    <Pressable onPress={onPress} hitSlop={14} style={posStyle}>
+      {({ pressed }) => (
+        <Text style={[styles.skipLinkText, pressed && { opacity: 0.5 }]}>
+          Enter the Vault →
+        </Text>
+      )}
+    </Pressable>
+  );
+}
+
 // ─── shared CTA button ────────────────────────────────────────────────────────
 function EnterButton({ onPress, style, label = 'ENTER THE VAULT' }: { onPress: () => void; style?: object; label?: string }) {
   return (
@@ -518,6 +569,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 36, left: 0, right: 0,
     alignItems: 'center',
+  },
+  skipLinkText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: GOLD,
+    letterSpacing: 1.5,
+    opacity: 0.75,
   },
   scrollHintText: {
     fontSize: 8,
