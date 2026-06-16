@@ -28,7 +28,7 @@ export const listings: Listing[] = [
     reviewCount: 92,
     maxGuests: 4,
     emoji: '🗼',
-    imageUrl: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&h=600&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1507149833265-60c372daea22?w=800&h=600&fit=crop&q=80',
     description: 'Stay inside a still-operating 1880s lighthouse perched on a rocky headland with 360° ocean views.',
   },
   {
@@ -118,7 +118,7 @@ export const listings: Listing[] = [
     reviewCount: 271,
     maxGuests: 2,
     emoji: '🔺',
-    imageUrl: 'https://images.unsplash.com/photo-1520466809213-7b9a56adcd45?w=800&h=600&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&h=600&fit=crop&q=80',
     description: 'A transparent-ceiling dome in the high desert, perfect for falling asleep under the Milky Way.',
   },
   {
@@ -238,7 +238,7 @@ export const listings: Listing[] = [
     reviewCount: 76,
     maxGuests: 2,
     emoji: '❄️',
-    imageUrl: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=800&h=600&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1518569656558-1f25e69d2049?w=800&h=600&fit=crop&q=80',
     description: 'Watch the aurora borealis dance overhead through a heated glass-ceiling igloo.',
   },
   {
@@ -283,7 +283,7 @@ export const listings: Listing[] = [
     reviewCount: 327,
     maxGuests: 4,
     emoji: '🎸',
-    imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&h=600&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&h=600&fit=crop&q=80',
     description: 'A laid-back apartment two blocks from the best live-music venues in town.',
   },
   {
