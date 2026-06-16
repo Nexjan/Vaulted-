@@ -17,7 +17,7 @@ const GOLD = '#C8A86B';
 const BG = '#0A0A0A';
 const PANEL = '#0E0E0E';
 
-// ─── session tracking ──────────────────────────────────────────────────────
+// ─── session tracking ──────────────────────────────────────────────
 let _mobileHasPlayed = false;
 
 function alreadyPlayed(): boolean {
@@ -42,7 +42,7 @@ function reducedMotion(): boolean {
   catch { return false; }
 }
 
-// ─── component ────────────────────────────────────────────────────────────
+// ─── component ──────────────────────────────────────────────────────────────
 interface Props { onDone: () => void; }
 
 export function VaultEntry({ onDone }: Props) {
@@ -51,6 +51,7 @@ export function VaultEntry({ onDone }: Props) {
 
   // Capture dimensions at mount — stable for the ~1.5s animation
   const W = useRef(Dimensions.get('window').width).current;
+  const H = useRef(Dimensions.get('window').height).current;
 
   const wordmarkAlpha  = useRef(new Animated.Value(0)).current;
   const seamAlpha      = useRef(new Animated.Value(0)).current;
@@ -105,14 +106,14 @@ export function VaultEntry({ onDone }: Props) {
       <Pressable style={styles.fill} onPress={dismiss}>
         {/* ── Left door panel — left half of vault image ── */}
         <Animated.View style={[styles.panelLeft, { width: halfW, transform: [{ translateX: leftX }] }]}>
-          <Image source={{ uri: VAULT_BG_URI }} style={[styles.panelImg, { width: W, left: 0 }]} resizeMode="cover" />
+          <Image source={{ uri: VAULT_BG_URI }} style={[styles.panelImg, { width: W, left: 0, height: H * 0.5 }]} resizeMode="cover" />
           <View style={styles.panelOverlay} />
           <View style={styles.leftEdgeShadow} />
         </Animated.View>
 
         {/* ── Right door panel — right half of vault image ── */}
         <Animated.View style={[styles.panelRight, { width: halfW, transform: [{ translateX: rightX }] }]}>
-          <Image source={{ uri: VAULT_BG_URI }} style={[styles.panelImg, { width: W, right: 0 }]} resizeMode="cover" />
+          <Image source={{ uri: VAULT_BG_URI }} style={[styles.panelImg, { width: W, right: 0, height: H * 0.5 }]} resizeMode="cover" />
           <View style={styles.panelOverlay} />
           <View style={styles.rightEdgeShadow} />
         </Animated.View>
@@ -159,7 +160,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ── Door panels ────────────────────────────────
+  // ── Door panels ────────────────────────────
   panelLeft: {
     position: 'absolute',
     top: 0,
@@ -171,7 +172,6 @@ const styles = StyleSheet.create({
   panelImg: {
     position: 'absolute',
     top: 0,
-    bottom: 0,
   },
   panelOverlay: {
     position: 'absolute',
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.52)',
+    backgroundColor: 'rgba(0,0,0,0.88)',
   },
   leftEdgeShadow: {
     position: 'absolute',
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
 
-  // ── Seam ───────────────────────────────────────────
+  // ── Seam ─────────────────────────────────────────────
   seam: {
     position: 'absolute',
     top: 0,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     letterSpacing: 3.5,
   },
 
-  // ── Skip ─────────────────────────────────────────────
+  // ── Skip ──────────────────────────────────────────────
   skipWrap: {
     position: 'absolute',
     bottom: 44,
