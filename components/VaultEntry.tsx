@@ -106,12 +106,14 @@ export function VaultEntry({ onDone }: Props) {
         {/* ── Left door panel — left half of vault image ── */}
         <Animated.View style={[styles.panelLeft, { width: halfW, transform: [{ translateX: leftX }] }]}>
           <Image source={{ uri: VAULT_BG_URI }} style={[styles.panelImg, { width: W, left: 0 }]} resizeMode="cover" />
+          <View style={styles.panelOverlay} />
           <View style={styles.leftEdgeShadow} />
         </Animated.View>
 
         {/* ── Right door panel — right half of vault image ── */}
         <Animated.View style={[styles.panelRight, { width: halfW, transform: [{ translateX: rightX }] }]}>
           <Image source={{ uri: VAULT_BG_URI }} style={[styles.panelImg, { width: W, right: 0 }]} resizeMode="cover" />
+          <View style={styles.panelOverlay} />
           <View style={styles.rightEdgeShadow} />
         </Animated.View>
 
@@ -170,6 +172,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
+  },
+  panelOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.52)',
   },
   leftEdgeShadow: {
     position: 'absolute',
