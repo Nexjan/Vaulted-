@@ -3,7 +3,7 @@ import { Animated, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, V
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { listings } from '../../data/listings';
+import { listings } from '../../lib/listingsService';
 import { PriceHistoryChart } from '../../components/PriceHistoryChart';
 import { ReviewsSection } from '../../components/ReviewsSection';
 import { getUniqueness } from '../../lib/uniqueness';
@@ -93,10 +93,12 @@ export default function ListingDetailScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+
+        {/* ── Hero image ── */}
         <View style={styles.hero}>
           <SkeletonBlock style={StyleSheet.absoluteFill} />
           <Animated.Image
-            source={{ uri: listing.imageUrl }}
+            source={{ uri: listing.imageUrls[0] }}
             style={[styles.heroImage, { opacity: heroOpacity }]}
             resizeMode="cover"
             onLoad={() => {
@@ -105,7 +107,11 @@ export default function ListingDetailScreen() {
             }}
           />
           <View style={styles.heroOverlay} />
-          <Pressable onPress={() => toggleFavorite(listing.id)} hitSlop={8} style={styles.heartBtn}>
+          <Pressable
+            onPress={() => toggleFavorite(listing.id)}
+            hitSlop={8}
+            style={styles.heartBtn}
+          >
             <Ionicons name={active ? 'heart' : 'heart-outline'} size={22} color={active ? GOLD : TEXT} />
           </Pressable>
           <View style={styles.heroBottom}>
@@ -115,8 +121,9 @@ export default function ListingDetailScreen() {
           </View>
         </View>
 
+        {/* ── Title & meta ── */}
         <View style={styles.titleBlock}>
-          <Text style={styles.title}>{listing.title}</Text>
+          <Text style={styles.title}>{listing.name}</Text>
           <View style={styles.metaRow}>
             <Text style={styles.metaItem}>★ {listing.rating.toFixed(2)}</Text>
             <Text style={styles.metaDot}>·</Text>
@@ -128,6 +135,7 @@ export default function ListingDetailScreen() {
 
         <View style={styles.divider} />
 
+        {/* ── Rarity ── */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>RARITY SCORE</Text>
           <Text style={styles.rarityScore}>
@@ -138,7 +146,7 @@ export default function ListingDetailScreen() {
             <Text key={reason} style={styles.bullet}>— {reason}</Text>
           ))}
           <View style={styles.tagRow}>
-            {listing.tags.map((tag) => (
+            {listing.amenities.map((tag) => (
               <View key={tag} style={styles.tag}>
                 <Text style={styles.tagText}>{tag.toUpperCase()}</Text>
               </View>
@@ -148,6 +156,7 @@ export default function ListingDetailScreen() {
 
         <View style={styles.divider} />
 
+        {/* ── About ── */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>ABOUT THIS PLACE</Text>
           <Text style={styles.body}>{listing.description}</Text>
@@ -155,6 +164,7 @@ export default function ListingDetailScreen() {
 
         <View style={styles.divider} />
 
+        {/* ── Price check ── */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>PRICE CHECK</Text>
           <View style={styles.priceRow}>
@@ -171,6 +181,7 @@ export default function ListingDetailScreen() {
 
         <View style={styles.divider} />
 
+        {/* ── Price history ── */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>PRICE HISTORY</Text>
           <PriceHistoryChart history={priceHistory} />
@@ -178,55 +189,279 @@ export default function ListingDetailScreen() {
 
         <View style={styles.divider} />
 
+        {/* ── Reviews ── */}
         <View style={styles.section}>
           <ReviewsSection listing={listing} />
         </View>
+
       </ScrollView>
 
+      {/* ── Reserve bar ── */}
       <ReserveBar listing={listing} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: BG },
-  container: { flex: 1, backgroundColor: BG },
-  content: { paddingBottom: 108 },
-  hero: { height: 340, backgroundColor: SURFACE },
-  heroImage: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  heroOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.25)' },
-  heartBtn: { position: 'absolute', top: 56, right: 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(10,10,10,0.6)', alignItems: 'center', justifyContent: 'center' },
-  heroBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingBottom: 14, paddingTop: 20, backgroundColor: 'rgba(0,0,0,0.5)' },
-  heroType: { fontSize: 9, fontWeight: '700', color: GOLD, letterSpacing: 2.5 },
-  titleBlock: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 20 },
-  title: { fontSize: 28, fontWeight: '800', color: TEXT, fontFamily: 'Georgia', lineHeight: 34, letterSpacing: -0.5 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
-  metaItem: { fontSize: 12, color: MUTED, letterSpacing: 0.3 },
-  metaDot: { fontSize: 12, color: '#333' },
-  divider: { height: 1, backgroundColor: DIVIDER },
-  section: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 22 },
-  sectionLabel: { fontSize: 9, fontWeight: '700', color: GOLD, letterSpacing: 2.5, marginBottom: 14 },
-  rarityScore: { fontSize: 40, fontWeight: '900', color: GOLD, fontFamily: 'Georgia', letterSpacing: -1, lineHeight: 44, marginBottom: 14 },
-  rarityTotal: { fontSize: 20, fontWeight: '400', color: MUTED },
-  bullet: { fontSize: 13, lineHeight: 22, color: '#888' },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
-  tag: { borderWidth: 1, borderColor: '#2A2A2A', borderRadius: 1, paddingHorizontal: 10, paddingVertical: 5 },
-  tagText: { fontSize: 9, fontWeight: '600', color: MUTED, letterSpacing: 1.5 },
-  body: { fontSize: 14, lineHeight: 22, color: '#888888' },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 10 },
-  price: { fontSize: 32, fontWeight: '900', color: TEXT, fontFamily: 'Georgia', letterSpacing: -1 },
-  priceUnit: { fontSize: 13, color: MUTED },
-  dealBadge: { borderWidth: 1, borderColor: '#5DA87A', borderRadius: 1, paddingHorizontal: 8, paddingVertical: 4, marginLeft: 4, alignSelf: 'flex-end', marginBottom: 4 },
-  dealBadgeText: { fontSize: 8, fontWeight: '700', color: '#5DA87A', letterSpacing: 1.5 },
-  dealCopy: { fontSize: 13, lineHeight: 20, color: MUTED },
-  reserveBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 14, borderTopWidth: 1, borderTopColor: DIVIDER, backgroundColor: BG, gap: 14 },
-  reservePriceGroup: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-  reservePrice: { fontSize: 20, fontWeight: '900', color: TEXT, fontFamily: 'Georgia', letterSpacing: -0.5 },
-  reservePriceUnit: { fontSize: 11, color: MUTED },
-  reserveBtn: { flex: 1, height: 52, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  reserveBtnPressed: { opacity: 0.82 },
-  reserveBtnText: { fontSize: 11, fontWeight: '800', color: '#0A0A0A', letterSpacing: 2.5 },
-  reserveSheen: { position: 'absolute', top: 0, bottom: 0, width: 70, backgroundColor: 'rgba(255,255,255,0.18)' },
-  notFound: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: BG },
-  notFoundText: { fontSize: 10, fontWeight: '700', color: MUTED, letterSpacing: 2.5 },
+  screen: {
+    flex: 1,
+    backgroundColor: BG,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: BG,
+  },
+  content: {
+    paddingBottom: 108,
+  },
+
+  // Hero
+  hero: {
+    height: 340,
+    backgroundColor: SURFACE,
+  },
+  heroImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  heroOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  heartBtn: {
+    position: 'absolute',
+    top: 56,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(10,10,10,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    paddingTop: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  heroType: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: GOLD,
+    letterSpacing: 2.5,
+  },
+
+  // Title block
+  titleBlock: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: TEXT,
+    fontFamily: 'Georgia',
+    lineHeight: 34,
+    letterSpacing: -0.5,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+  },
+  metaItem: {
+    fontSize: 12,
+    color: MUTED,
+    letterSpacing: 0.3,
+  },
+  metaDot: {
+    fontSize: 12,
+    color: '#333',
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: DIVIDER,
+  },
+
+  // Sections
+  section: {
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 22,
+  },
+  sectionLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: GOLD,
+    letterSpacing: 2.5,
+    marginBottom: 14,
+  },
+
+  // Rarity
+  rarityScore: {
+    fontSize: 40,
+    fontWeight: '900',
+    color: GOLD,
+    fontFamily: 'Georgia',
+    letterSpacing: -1,
+    lineHeight: 44,
+    marginBottom: 14,
+  },
+  rarityTotal: {
+    fontSize: 20,
+    fontWeight: '400',
+    color: MUTED,
+  },
+  bullet: {
+    fontSize: 13,
+    lineHeight: 22,
+    color: '#888',
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 14,
+  },
+  tag: {
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    borderRadius: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  tagText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: MUTED,
+    letterSpacing: 1.5,
+  },
+
+  // Body text
+  body: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#888888',
+  },
+
+  // Price
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    marginBottom: 10,
+  },
+  price: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: TEXT,
+    fontFamily: 'Georgia',
+    letterSpacing: -1,
+  },
+  priceUnit: {
+    fontSize: 13,
+    color: MUTED,
+  },
+  dealBadge: {
+    borderWidth: 1,
+    borderColor: '#5DA87A',
+    borderRadius: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginLeft: 4,
+    alignSelf: 'flex-end',
+    marginBottom: 4,
+  },
+  dealBadgeText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#5DA87A',
+    letterSpacing: 1.5,
+  },
+  dealCopy: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: MUTED,
+  },
+
+  // Reserve bar
+  reserveBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: DIVIDER,
+    backgroundColor: BG,
+    gap: 14,
+  },
+  reservePriceGroup: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  reservePrice: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: TEXT,
+    fontFamily: 'Georgia',
+    letterSpacing: -0.5,
+  },
+  reservePriceUnit: {
+    fontSize: 11,
+    color: MUTED,
+  },
+  reserveBtn: {
+    flex: 1,
+    height: 52,
+    backgroundColor: GOLD,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  reserveBtnPressed: {
+    opacity: 0.82,
+  },
+  reserveBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0A0A0A',
+    letterSpacing: 2.5,
+  },
+  reserveSheen: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 70,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+
+  // Not found
+  notFound: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: BG,
+  },
+  notFoundText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: MUTED,
+    letterSpacing: 2.5,
+  },
 });
