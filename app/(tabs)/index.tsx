@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Animated, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,51 @@ import { listings } from '../../data/listings';
 import { Listing } from '../../lib/types';
 import { getUniqueness } from '../../lib/uniqueness';
 import { useFavorites } from '../../lib/favorites';
+
+// ─── reduced-motion check (web only) ───────────────────────────────────────
+const REDUCE_MOTION =
+  Platform.OS === 'web' &&
+  typeof window !== 'undefined' &&
+  (() => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
+
+// ─── tilt hook ──────────────────────────────────────────────────────────────
+function useTilt() {
+  const rotX = useRef(new Animated.Value(0)).current;
+  const rotY = useRef(new Animated.Value(0)).current;
+  const glow = useRef(new Animated.Value(0)).current;
+
+  const rotXStr = rotX.interpolate({ inputRange: [-8, 8], outputRange: ['-8deg', '8deg'] });
+  const rotYStr = rotY.interpolate({ inputRange: [-8, 8], outputRange: ['-8deg', '8deg'] });
+
+  const onMouseMove = (e: any) => {
+    if (REDUCE_MOTION) return;
+    try {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const rx = (e.nativeEvent.clientX - rect.left) / rect.width - 0.5;
+      const ry = (e.nativeEvent.clientY - rect.top) / rect.height - 0.5;
+      rotY.setValue(rx * 16);
+      rotX.setValue(-ry * 10);
+      glow.setValue(Math.min(Math.sqrt(rx * rx + ry * ry) * 2, 0.9));
+    } catch {}
+  };
+
+  const onMouseLeave = () => {
+    if (REDUCE_MOTION) return;
+    Animated.parallel([
+      Animated.spring(rotX, { toValue: 0, useNativeDriver: false, tension: 100, friction: 12 }),
+      Animated.spring(rotY, { toValue: 0, useNativeDriver: false, tension: 100, friction: 12 }),
+      Animated.spring(glow, { toValue: 0, useNativeDriver: false, tension: 100, friction: 12 }),
+    ]).start();
+  };
+
+  const webHandlers = !REDUCE_MOTION && Platform.OS === 'web' ? { onMouseMove, onMouseLeave } : {};
+
+  const tiltStyle = REDUCE_MOTION ? {} : ({
+    transform: [{ perspective: 800 }, { rotateX: rotXStr }, { rotateY: rotYStr }],
+  } as any);
+
+  return { webHandlers, tiltStyle, glow };
+}
 
 const BG = '#0A0A0A';
 const TEXT = '#F5F3EF';
@@ -149,37 +194,45 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
+  const { webHandlers, tiltStyle, glow } = useTilt();
 
   return (
     <Pressable
       onPress={() => router.push(`/listing/${listing.id}`)}
-      style={({ pressed }) => [styles.hero, pressed && styles.heroPressed]}
+      style={styles.heroOuter}
+      {...(webHandlers as any)}
     >
-      <Image source={{ uri: listing.imageUrl }} style={styles.heroImage} resizeMode="cover" />
-      <View style={styles.heroOverlay} />
-      <Text style={styles.heroNumber}>{num}</Text>
-      <View style={styles.heroBottom}>
-        <View style={styles.heroInfo}>
-          <Text style={styles.heroTitle} numberOfLines={2}>{listing.title}</Text>
-          <Text style={styles.heroLocation}>
-            {listing.city.toUpperCase()}, {listing.country.toUpperCase()} · {listing.propertyType.toUpperCase()}
-          </Text>
-          <View style={styles.heroMeta}>
-            <Text style={styles.heroRarity}>◆ {uniqueness.score}/100</Text>
-            <Text style={styles.heroPrice}>
-              ${listing.pricePerNight}
-              <Text style={styles.heroUnit}> /night</Text>
-            </Text>
+      {({ pressed }) => (
+        <Animated.View style={[styles.hero, tiltStyle, pressed && styles.heroPressed]}>
+          <Image source={{ uri: listing.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+          <View style={styles.heroOverlay} />
+          <Text style={styles.heroNumber}>{num}</Text>
+          <View style={styles.heroBottom}>
+            <View style={styles.heroInfo}>
+              <Text style={styles.heroTitle} numberOfLines={2}>{listing.title}</Text>
+              <Text style={styles.heroLocation}>
+                {listing.city.toUpperCase()}, {listing.country.toUpperCase()} · {listing.propertyType.toUpperCase()}
+              </Text>
+              <View style={styles.heroMeta}>
+                <Text style={styles.heroRarity}>◆ {uniqueness.score}/100</Text>
+                <Text style={styles.heroPrice}>
+                  ${listing.pricePerNight}
+                  <Text style={styles.heroUnit}> /night</Text>
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); toggleFavorite(listing.id); }}
+              hitSlop={8}
+              style={styles.heroHeart}
+            >
+              <Ionicons name={active ? 'heart' : 'heart-outline'} size={22} color={active ? GOLD : TEXT} />
+            </Pressable>
           </View>
-        </View>
-        <Pressable
-          onPress={(e) => { e.stopPropagation(); toggleFavorite(listing.id); }}
-          hitSlop={8}
-          style={styles.heroHeart}
-        >
-          <Ionicons name={active ? 'heart' : 'heart-outline'} size={22} color={active ? GOLD : TEXT} />
-        </Pressable>
-      </View>
+          {/* gold edge-glow that shifts with tilt */}
+          <Animated.View pointerEvents="none" style={[styles.heroGlow, { opacity: glow }]} />
+        </Animated.View>
+      )}
     </Pressable>
   );
 }
@@ -193,34 +246,41 @@ function EditorialRow({ listing, number }: { listing: Listing; number: number })
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
+  const { webHandlers, tiltStyle, glow } = useTilt();
 
   return (
     <Pressable
       onPress={() => router.push(`/listing/${listing.id}`)}
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      style={styles.rowOuter}
+      {...(webHandlers as any)}
     >
-      <Text style={styles.rowNumber}>{num}</Text>
-      <Image source={{ uri: listing.imageUrl }} style={styles.rowImage} resizeMode="cover" />
-      <View style={styles.rowBody}>
-        <Text style={styles.rowTitle} numberOfLines={2}>{listing.title}</Text>
-        <Text style={styles.rowLocation}>
-          {listing.city.toUpperCase()} · {listing.propertyType.toUpperCase()}
-        </Text>
-        <View style={styles.rowMeta}>
-          <Text style={styles.rowRarity}>◆ {uniqueness.score}</Text>
-          <Text style={styles.rowPrice}>
-            ${listing.pricePerNight}
-            <Text style={styles.rowUnit}>/nt</Text>
-          </Text>
-        </View>
-      </View>
-      <Pressable
-        onPress={(e) => { e.stopPropagation(); toggleFavorite(listing.id); }}
-        hitSlop={8}
-        style={styles.rowHeart}
-      >
-        <Ionicons name={active ? 'heart' : 'heart-outline'} size={16} color={active ? GOLD : MUTED} />
-      </Pressable>
+      {({ pressed }) => (
+        <Animated.View style={[styles.row, tiltStyle, pressed && styles.rowPressed]}>
+          <Text style={styles.rowNumber}>{num}</Text>
+          <Image source={{ uri: listing.imageUrl }} style={styles.rowImage} resizeMode="cover" />
+          <View style={styles.rowBody}>
+            <Text style={styles.rowTitle} numberOfLines={2}>{listing.title}</Text>
+            <Text style={styles.rowLocation}>
+              {listing.city.toUpperCase()} · {listing.propertyType.toUpperCase()}
+            </Text>
+            <View style={styles.rowMeta}>
+              <Text style={styles.rowRarity}>◆ {uniqueness.score}</Text>
+              <Text style={styles.rowPrice}>
+                ${listing.pricePerNight}
+                <Text style={styles.rowUnit}>/nt</Text>
+              </Text>
+            </View>
+          </View>
+          <Pressable
+            onPress={(e) => { e.stopPropagation(); toggleFavorite(listing.id); }}
+            hitSlop={8}
+            style={styles.rowHeart}
+          >
+            <Ionicons name={active ? 'heart' : 'heart-outline'} size={16} color={active ? GOLD : MUTED} />
+          </Pressable>
+          <Animated.View pointerEvents="none" style={[styles.rowGlow, { opacity: glow }]} />
+        </Animated.View>
+      )}
     </Pressable>
   );
 }
@@ -342,16 +402,26 @@ const styles = StyleSheet.create({
   },
 
   // Hero listing
-  hero: {
-    height: 420,
+  heroOuter: {
     marginHorizontal: 20,
     marginTop: 24,
     marginBottom: 24,
+  },
+  hero: {
+    height: 420,
     overflow: 'hidden',
   },
   heroPressed: {
     opacity: 0.9,
-    transform: [{ scale: 0.99 }],
+  },
+  heroGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(200,168,107,0.85)',
   },
   heroImage: {
     position: 'absolute',
@@ -441,6 +511,9 @@ const styles = StyleSheet.create({
   },
 
   // Editorial rows
+  rowOuter: {
+    overflow: 'hidden',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -450,6 +523,16 @@ const styles = StyleSheet.create({
   },
   rowPressed: {
     backgroundColor: '#111111',
+  },
+  rowGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(200,168,107,0.6)',
+    pointerEvents: 'none',
   },
   rowNumber: {
     width: 32,
