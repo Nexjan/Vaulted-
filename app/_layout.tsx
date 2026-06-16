@@ -18,7 +18,10 @@ function AppShell() {
 
   useEffect(() => {
     if (!vaultDone) return;
-    if (!isOnboardingSessionDone()) setShowOnboarding(true);
+    if (isOnboardingSessionDone()) return;
+    const delay = Math.random() * 60_000 + 300_000; // 5–6 min
+    const t = setTimeout(() => setShowOnboarding(true), delay);
+    return () => clearTimeout(t);
   }, [vaultDone]);
 
   const handleOnboardingDone = (prefs: OnboardingPrefs | null) => {
