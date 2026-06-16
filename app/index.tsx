@@ -38,6 +38,7 @@ const { height: WIN_H, width: WIN_W } = Dimensions.get('window');
 
 const TOP_LISTINGS = sortByUniqueness(listings).slice(0, 4);
 const HERO_IMG     = TOP_LISTINGS[0]?.imageUrls?.[0] ?? '';
+const CLOSING_IMG  = TOP_LISTINGS[3]?.imageUrls?.[0] ?? HERO_IMG;
 const TOTAL_STAYS  = listings.length;
 
 // CSS passthrough for web scroll-snap (RN Web forwards unknown style keys to the DOM)
@@ -155,6 +156,7 @@ function HeroChapter({ onEnter }: { onEnter: () => void }) {
   const contentY      = useRef(new Animated.Value(REDUCE_MOTION ? 0 : 28)).current;
   const imgAlpha      = useRef(new Animated.Value(0)).current;
   const hintAlpha     = useRef(new Animated.Value(REDUCE_MOTION ? 0.45 : 0)).current;
+  const bounceY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (REDUCE_MOTION) return;
@@ -179,6 +181,19 @@ function HeroChapter({ onEnter }: { onEnter: () => void }) {
       ]),
       Animated.timing(hintAlpha, { toValue: 0.45, duration: 500, useNativeDriver: true }),
     ]).start();
+  }, []);
+
+  useEffect(() => {
+    if (REDUCE_MOTION) return;
+    const t = setTimeout(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounceY, { toValue: 7, duration: 750, easing: Easing.inOut(Easing.sine), useNativeDriver: true }),
+          Animated.timing(bounceY, { toValue: 0, duration: 750, easing: Easing.inOut(Easing.sine), useNativeDriver: true }),
+        ])
+      ).start();
+    }, 3200);
+    return () => clearTimeout(t);
   }, []);
 
   return (
@@ -231,7 +246,7 @@ function HeroChapter({ onEnter }: { onEnter: () => void }) {
       </Animated.View>
 
       {/* Scroll hint */}
-      <Animated.View style={[styles.scrollHint, { opacity: hintAlpha }]} pointerEvents="none">
+      <Animated.View style={[styles.scrollHint, { opacity: hintAlpha, transform: [{ translateY: bounceY }] }]} pointerEvents="none">
         <Text style={styles.scrollHintText}>SCROLL TO DISCOVER</Text>
         <View style={styles.scrollHintLine} />
       </Animated.View>
@@ -367,22 +382,35 @@ function ClosingChapter({
   scrollVal: number;
   onEnter: () => void;
 }) {
-  const reveal = useChapterReveal(3, scrollVal);
-  const ty     = reveal.interpolate({ inputRange: [0, 1], outputRange: [30, 0] });
+  const reveal   = useChapterReveal(3, scrollVal);
+  const ty       = reveal.interpolate({ inputRange: [0, 1], outputRange: [30, 0] });
+  const imgAlpha = useRef(new Animated.Value(0)).current;
 
   return (
     <View
       style={[
         styles.chapter,
-        { height: WIN_H, backgroundColor: BG, borderTopWidth: 1, borderTopColor: DIVIDER },
+        { height: WIN_H, backgroundColor: BG },
         WEB_SNAP_CHAPTER,
       ]}
     >
+      {/* Atmospheric background — gives depth vs the pure-black hero */}
+      <Animated.Image
+        source={{ uri: CLOSING_IMG }}
+        style={[StyleSheet.absoluteFill, { opacity: imgAlpha }]}
+        resizeMode="cover"
+        onLoad={() =>
+          Animated.timing(imgAlpha, { toValue: 1, duration: 900, useNativeDriver: true }).start()
+        }
+      />
+      <View style={styles.closingOverlay} />
+
       <Animated.View style={[styles.closingInner, { opacity: reveal, transform: [{ translateY: ty }] }]}>
+        {/* Smaller, refined wordmark — deliberately different from the 76px hero */}
         <Text style={styles.closingWordmark}>VAULTED</Text>
         <View style={styles.closingGoldLine} />
-        <Text style={styles.closingTagline}>Not every stay. Only the rare ones.</Text>
-        <EnterButton onPress={onEnter} style={{ marginTop: 44 }} />
+        <Text style={styles.closingTagline}>Your collection awaits.</Text>
+        <EnterButton onPress={onEnter} style={{ marginTop: 44 }} label="OPEN THE VAULT" />
         <Text style={styles.closingTrust}>A curated collection · {TOTAL_STAYS} rare stays</Text>
         <View style={styles.legalRow}>
           <Pressable hitSlop={8}><Text style={styles.legalLink}>Privacy Policy</Text></Pressable>
@@ -397,13 +425,13 @@ function ClosingChapter({
 }
 
 // ─── shared CTA button ────────────────────────────────────────────────────────
-function EnterButton({ onPress, style }: { onPress: () => void; style?: object }) {
+function EnterButton({ onPress, style, label = 'ENTER THE VAULT' }: { onPress: () => void; style?: object; label?: string }) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.cta, style, pressed && styles.ctaPressed]}
     >
-      <Text style={styles.ctaText}>ENTER THE VAULT</Text>
+      <Text style={styles.ctaText}>{label}</Text>
     </Pressable>
   );
 }
@@ -422,6 +450,10 @@ const styles = StyleSheet.create({
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.50)',
+  },
+  closingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.80)',
   },
   panel: {
     position: 'absolute',
@@ -494,8 +526,9 @@ const styles = StyleSheet.create({
   },
   scrollHintLine: {
     marginTop: 10,
-    width: 1, height: 30,
+    width: 1.5, height: 36,
     backgroundColor: GOLD,
+    borderRadius: 1,
   },
 
   // ── CTA button (shared) ───────────────────────────────────────────────────
@@ -641,11 +674,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   closingWordmark: {
-    fontSize: 58,
-    fontWeight: '900',
+    fontSize: 46,
+    fontWeight: '700',
     color: TEXT,
     fontFamily: 'Georgia',
-    letterSpacing: -2,
+    letterSpacing: -1,
   },
   closingGoldLine: {
     width: 44, height: 1,
@@ -653,12 +686,13 @@ const styles = StyleSheet.create({
     marginTop: 22, marginBottom: 22,
   },
   closingTagline: {
-    fontSize: 17,
-    color: 'rgba(245,243,239,0.68)',
+    fontSize: 26,
+    color: 'rgba(245,243,239,0.88)',
     textAlign: 'center',
     fontStyle: 'italic',
+    fontFamily: 'Georgia',
     letterSpacing: 0.2,
-    lineHeight: 26,
+    lineHeight: 34,
   },
   closingTrust: {
     marginTop: 24,
