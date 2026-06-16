@@ -406,10 +406,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 24,
     marginBottom: 24,
+    overflow: 'hidden',
   },
   hero: {
-    height: 420,
-    overflow: 'hidden',
+    height: 460,
   },
   heroPressed: {
     opacity: 0.9,
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 18,
+    paddingBottom: 24,
   },
   heroInfo: {
     flex: 1,

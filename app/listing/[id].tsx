@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   },
   dealBadge: {
     borderWidth: 1,
-    borderColor: '#5DA87A',
+    borderColor: GOLD,
     borderRadius: 1,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   dealBadgeText: {
     fontSize: 8,
     fontWeight: '700',
-    color: '#5DA87A',
+    color: GOLD,
     letterSpacing: 1.5,
   },
   dealCopy: {

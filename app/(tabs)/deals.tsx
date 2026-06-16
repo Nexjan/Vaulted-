@@ -12,7 +12,6 @@ const TEXT = '#F5F3EF';
 const GOLD = '#C8A86B';
 const MUTED = '#555555';
 const DIVIDER = '#1E1E1E';
-const GREEN = '#5DA87A';
 
 export default function DealsScreen() {
   const router = useRouter();
@@ -121,7 +120,7 @@ const styles = StyleSheet.create({
   headerLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: GREEN,
+    color: GOLD,
     letterSpacing: 2.5,
   },
   headerLine: {
@@ -150,7 +149,7 @@ const styles = StyleSheet.create({
     width: 32,
     fontSize: 20,
     fontWeight: '900',
-    color: GREEN,
+    color: GOLD,
     fontFamily: 'Georgia',
     letterSpacing: -1,
     textAlign: 'right',
@@ -183,7 +182,7 @@ const styles = StyleSheet.create({
   savingsBadge: {
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: GREEN,
+    borderColor: GOLD,
     borderRadius: 1,
     paddingHorizontal: 6,
     paddingVertical: 3,
@@ -191,7 +190,7 @@ const styles = StyleSheet.create({
   savingsText: {
     fontSize: 8,
     fontWeight: '700',
-    color: GREEN,
+    color: GOLD,
     letterSpacing: 1.5,
   },
   avgText: {
