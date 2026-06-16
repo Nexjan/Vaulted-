@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
-const STORAGE_KEY = 'rare-stays:favorite-listing-ids';
+const STORAGE_KEY = 'vaulted:favorite-listing-ids';
 
 interface FavoritesContextValue {
   favoriteIds: string[];

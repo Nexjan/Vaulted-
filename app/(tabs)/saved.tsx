@@ -31,7 +31,7 @@ export default function SavedScreen() {
           isLoaded ? (
             <View style={styles.empty}>
               <Text style={styles.emptyText}>
-                Nothing saved yet. Browse Search, Rare Finds, or Best Deals and tap the heart on a listing to save it here.
+                Nothing saved yet. Browse Search, Finds, or Best Deals and tap the heart on a listing to save it here.
               </Text>
             </View>
           ) : null

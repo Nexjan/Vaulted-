@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
-const STORAGE_KEY = 'rare-stays:user-reviews';
+const STORAGE_KEY = 'vaulted:user-reviews';
 
 export interface UserReview {
   id: string;

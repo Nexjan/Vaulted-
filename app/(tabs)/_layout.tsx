@@ -20,7 +20,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="rare"
         options={{
-          title: 'Rare Finds',
+          title: 'Finds',
           tabBarIcon: ({ color, size }) => <Ionicons name="sparkles" color={color} size={size} />,
         }}
       />
