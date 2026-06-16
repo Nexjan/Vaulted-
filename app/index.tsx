@@ -133,16 +133,20 @@ export default function LandingPage() {
   const router                    = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [scrollVal, setScrollVal] = useState(0);
+  // Synchronous — drives the skip-link style without blocking render.
+  const isReturning = hasEnteredBefore();
 
   const enterApp = useCallback(() => {
     markEntered();
     router.push('/search');
   }, [router]);
 
-  // Logged-in users and returning users skip the cinematic entirely.
+  // Only logged-in users are auto-redirected — they have an active session and
+  // don't need the cinematic. localStorage returning users get a prominent skip
+  // link instead so the cinematic remains accessible (e.g. for devs iterating).
   useEffect(() => {
-    if (authLoading) return;
-    if (user || hasEnteredBefore()) router.replace('/search');
+    if (authLoading || !user) return;
+    router.replace('/search');
   }, [authLoading, user]);
 
   // On web: prevent document body from double-scrolling
@@ -152,9 +156,6 @@ export default function LandingPage() {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, []);
-
-  // Hold until auth resolves — prevents door animation starting and aborting mid-way
-  if (authLoading) return <View style={{ flex: 1, backgroundColor: BG }} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: BG }}>
@@ -170,8 +171,8 @@ export default function LandingPage() {
         <CollectionChapter scrollVal={scrollVal} onEnter={enterApp} />
         <ClosingChapter scrollVal={scrollVal} onEnter={enterApp} />
       </ScrollView>
-      {/* Persistent skip — fixed top-right, visible on every chapter */}
-      <SkipLink onPress={enterApp} />
+      {/* Persistent skip — fixed top-right, more prominent for returning users */}
+      <SkipLink onPress={enterApp} isReturning={isReturning} />
     </View>
   );
 }
@@ -458,7 +459,7 @@ function ClosingChapter({
 }
 
 // ─── persistent skip link (fixed top-right across all chapters) ──────────────
-function SkipLink({ onPress }: { onPress: () => void }) {
+function SkipLink({ onPress, isReturning }: { onPress: () => void; isReturning: boolean }) {
   // On web we can use position:fixed via RN Web's unknown-prop passthrough so
   // the link stays pinned to the viewport regardless of scroll position.
   const posStyle = Platform.OS === 'web'
@@ -468,8 +469,12 @@ function SkipLink({ onPress }: { onPress: () => void }) {
   return (
     <Pressable onPress={onPress} hitSlop={14} style={posStyle}>
       {({ pressed }) => (
-        <Text style={[styles.skipLinkText, pressed && { opacity: 0.5 }]}>
-          Enter the Vault →
+        <Text style={[
+          styles.skipLinkText,
+          isReturning && styles.skipLinkReturning,
+          pressed && { opacity: 0.5 },
+        ]}>
+          {isReturning ? 'Skip intro →' : 'Enter the Vault →'}
         </Text>
       )}
     </Pressable>
@@ -576,6 +581,11 @@ const styles = StyleSheet.create({
     color: GOLD,
     letterSpacing: 1.5,
     opacity: 0.75,
+  },
+  skipLinkReturning: {
+    fontSize: 13,
+    fontWeight: '700',
+    opacity: 1,
   },
   scrollHintText: {
     fontSize: 8,
