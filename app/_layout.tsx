@@ -9,6 +9,7 @@ import { VaultProvider, useVault } from '../lib/vaultContext';
 import { OnboardingProvider, useOnboarding, isOnboardingSessionDone } from '../lib/onboarding';
 import { OnboardingModal } from '../components/OnboardingModal';
 import { PriceAlertsProvider } from '../lib/priceAlerts';
+import { AuthProvider } from '../lib/auth';
 import type { OnboardingPrefs } from '../lib/onboarding';
 
 function AppShell() {
@@ -34,6 +35,7 @@ function AppShell() {
       <Stack screenOptions={{ headerShadowVisible: false, contentStyle: { backgroundColor: '#0A0A0A' } }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen
           name="listing/[id]"
           options={{ title: '', headerTransparent: true, headerTintColor: '#F5F3EF' }}
@@ -48,17 +50,19 @@ function AppShell() {
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <FavoritesProvider>
-        <UserReviewsProvider>
-          <VaultProvider>
-            <OnboardingProvider>
-              <PriceAlertsProvider>
-                <AppShell />
-              </PriceAlertsProvider>
-            </OnboardingProvider>
-          </VaultProvider>
-        </UserReviewsProvider>
-      </FavoritesProvider>
+      <AuthProvider>
+        <FavoritesProvider>
+          <UserReviewsProvider>
+            <VaultProvider>
+              <OnboardingProvider>
+                <PriceAlertsProvider>
+                  <AppShell />
+                </PriceAlertsProvider>
+              </OnboardingProvider>
+            </VaultProvider>
+          </UserReviewsProvider>
+        </FavoritesProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
