@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,7 +10,7 @@ import { Listing } from '../../lib/types';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { usePriceAlerts, getPriceDrop, PriceDrop } from '../../lib/priceAlerts';
 import { useAuth } from '../../lib/auth';
-import { useSharedVault } from '../../lib/sharedVault';
+import { useSharedVault, SharedVault } from '../../lib/sharedVault';
 
 const REDUCE_MOTION =
   Platform.OS === 'web' &&
@@ -24,9 +24,16 @@ const MUTED = '#555555';
 const DIVIDER = '#1E1E1E';
 const SURFACE = '#141414';
 
-function SharePanel() {
+interface SharePanelProps {
+  vault: SharedVault | null;
+  svLoading: boolean;
+  saving: boolean;
+  error: string | null;
+  setPublic: (isPublic: boolean, displayName?: string) => Promise<void>;
+}
+
+function SharePanel({ vault, svLoading, saving, error, setPublic }: SharePanelProps) {
   const { user } = useAuth();
-  const { vault, loading, saving, setPublic } = useSharedVault();
   const [nameInput, setNameInput] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -34,7 +41,7 @@ function SharePanel() {
     if (vault?.display_name) setNameInput(vault.display_name);
   }, [vault?.display_name]);
 
-  if (!user || loading) return null;
+  if (!user || svLoading) return null;
 
   const isPublic = vault?.is_public ?? false;
 
@@ -75,9 +82,14 @@ function SharePanel() {
         </View>
       </Pressable>
 
+      {!!error && (
+        <View style={sp.errorRow}>
+          <Text style={sp.errorText}>{error}</Text>
+        </View>
+      )}
+
       {isPublic && (
         <View style={sp.expanded}>
-          {/* Vault display name */}
           <Text style={sp.fieldLabel}>VAULT NAME</Text>
           <View style={sp.nameRow}>
             <TextInput
@@ -95,7 +107,6 @@ function SharePanel() {
             </Pressable>
           </View>
 
-          {/* Share link */}
           {shareUrl && (
             <>
               <Text style={[sp.fieldLabel, { marginTop: 16 }]}>SHAREABLE LINK</Text>
@@ -255,6 +266,8 @@ function VaultCard({ listing, index, drop }: { listing: Listing; index: number; 
 export default function SavedScreen() {
   const { favoriteIds, isLoaded } = useFavorites();
   const { alerts, recordPrice, isLoaded: alertsLoaded } = usePriceAlerts();
+  const { vault: sharedVault, loading: svLoading, saving: svSaving, error: svError, setPublic, refresh: refreshVault } = useSharedVault();
+  const [refreshing, setRefreshing] = useState(false);
 
   const vaulted = useMemo(
     () => listings.filter((listing) => favoriteIds.includes(listing.id)),
@@ -282,9 +295,26 @@ export default function SavedScreen() {
 
   const anyDrops = Object.values(priceDrops).some(Boolean);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshVault();
+    setRefreshing(false);
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={GOLD}
+            colors={[GOLD]}
+          />
+        }
+      >
 
         {/* Header */}
         <View style={styles.header}>
@@ -303,7 +333,13 @@ export default function SavedScreen() {
         </View>
 
         {/* Share vault panel (logged-in only) */}
-        <SharePanel />
+        <SharePanel
+          vault={sharedVault}
+          svLoading={svLoading}
+          saving={svSaving}
+          error={svError}
+          setPublic={setPublic}
+        />
 
         <View style={styles.divider} />
 
@@ -616,6 +652,18 @@ const sp = StyleSheet.create({
   },
   pillTextOn: {
     color: GOLD,
+  },
+  errorRow: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+    borderTopColor: DIVIDER,
+    paddingTop: 12,
+  },
+  errorText: {
+    fontSize: 10,
+    color: '#E05C5C',
+    letterSpacing: 0.5,
   },
   expanded: {
     borderTopWidth: 1,
