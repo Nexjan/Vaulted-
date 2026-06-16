@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { useVault } from '../../lib/vaultContext';
 import { useOnboarding } from '../../lib/onboarding';
@@ -249,6 +249,8 @@ export default function SearchScreen() {
   }, [wmWidth, vaultDone]);
   // ─────────────────────────────────────────────────────────────────────────────
 
+  const [refreshing, setRefreshing] = useState(false);
+
   const clearAll = () => {
     setQuery('');
     setSelectedCity(null);
@@ -259,9 +261,20 @@ export default function SearchScreen() {
     setSelectedVibes([]);
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    clearAll();
+    await new Promise((r) => setTimeout(r, 500));
+    setRefreshing(false);
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C8A86B" colors={['#C8A86B']} />}
+      >
 
         {/* ── Wordmark header ── */}
         <View style={styles.header}>
