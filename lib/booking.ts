@@ -5,6 +5,9 @@ import { Listing } from './types';
 const BOOKING_AFFILIATE_ID = '';
 
 export function getBookingUrl(listing: Listing): string {
+  // Use the stored property URL when real Booking.com data is present
+  if (listing.bookingUrl) return listing.bookingUrl;
+
   const destination = encodeURIComponent(`${listing.city}, ${listing.country}`);
   if (BOOKING_AFFILIATE_ID) {
     return `https://www.booking.com/searchresults.html?aid=${BOOKING_AFFILIATE_ID}&ss=${destination}&group_adults=2&no_rooms=1`;

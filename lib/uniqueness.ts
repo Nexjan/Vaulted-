@@ -53,7 +53,7 @@ export function getUniqueness(listing: Listing): UniquenessResult {
   const typeRarity = PROPERTY_TYPE_RARITY[listing.propertyType] ?? 1;
   reasons.push(`${listing.propertyType} is a ${typeRarity >= 8 ? 'very rare' : typeRarity >= 5 ? 'uncommon' : 'common'} stay type`);
 
-  const matchingTags = listing.tags.filter((tag) => RARE_TAGS.has(tag));
+  const matchingTags = listing.amenities.filter((tag) => RARE_TAGS.has(tag));
   const tagBonus = Math.min(matchingTags.length, 4) * 2.5; // up to 10 points
   if (matchingTags.length > 0) {
     reasons.push(`Notable for: ${matchingTags.join(', ')}`);
