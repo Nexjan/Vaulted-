@@ -28,7 +28,7 @@ function AppShell() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
-      <Stack screenOptions={{ headerShadowVisible: false }}>
+      <Stack screenOptions={{ headerShadowVisible: false, contentStyle: { backgroundColor: '#0A0A0A' } }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="listing/[id]"
