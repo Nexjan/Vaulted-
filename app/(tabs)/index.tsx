@@ -84,6 +84,47 @@ const SORT_OPTIONS = [
 ];
 type SortValue = 'rarity' | 'price_asc' | 'price_desc' | 'rating';
 
+type VibeId = 'remote' | 'architectural' | 'overwater' | 'offgrid' | 'cozy' | 'views';
+
+const VIBES: { id: VibeId; label: string; tags: string[]; types: string[] }[] = [
+  {
+    id: 'remote',
+    label: 'Remote & Wild',
+    tags: ['forest', 'desert', 'farm stay', 'creek access', 'snow', 'naturally cool'],
+    types: ['Treehouse', 'Yurt', 'Geodesic Dome', 'Cave House'],
+  },
+  {
+    id: 'architectural',
+    label: 'Architectural',
+    tags: ['unique architecture', 'stained glass', 'high ceilings', 'glass ceiling', 'modern', 'quirky', 'eco-friendly'],
+    types: ['Cave House', 'Shipping Container', 'Windmill', 'Igloo', 'Geodesic Dome', 'Train Caboose'],
+  },
+  {
+    id: 'overwater',
+    label: 'Over Water',
+    tags: ['floating', 'waterfront', 'oceanfront', 'sea views', 'lake views', 'kayaks included'],
+    types: ['Houseboat', 'Lighthouse'],
+  },
+  {
+    id: 'offgrid',
+    label: 'Off-Grid',
+    tags: ['off-grid', 'stargazing', 'wood stove', 'glass ceiling', 'northern lights'],
+    types: [],
+  },
+  {
+    id: 'cozy',
+    label: 'Cozy',
+    tags: ['fireplace', 'wood stove', 'hot tub', 'sauna', 'romantic', 'four-poster bed', 'pet-friendly'],
+    types: ['Cabin'],
+  },
+  {
+    id: 'views',
+    label: 'Dramatic Views',
+    tags: ['panoramic views', 'mountain views', 'sea views', 'sunset views', 'city views', 'northern lights', 'lake views'],
+    types: ['Lighthouse', 'Castle Tower', 'Windmill'],
+  },
+];
+
 const WM_LETTERS = 'VAULTED'.split('');
 
 export default function SearchScreen() {
@@ -93,6 +134,7 @@ export default function SearchScreen() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [minRarity, setMinRarity] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<SortValue>('rarity');
+  const [selectedVibes, setSelectedVibes] = useState<VibeId[]>([]);
 
   const cities = useMemo(
     () => Array.from(new Set(listings.map((l) => l.city))).sort(),
@@ -117,6 +159,16 @@ export default function SearchScreen() {
           .toLowerCase();
         if (!haystack.includes(q)) return false;
       }
+      if (selectedVibes.length > 0) {
+        const vibeMatch = selectedVibes.every((vibeId) => {
+          const vibe = VIBES.find((v) => v.id === vibeId)!;
+          return (
+            vibe.types.includes(listing.propertyType) ||
+            listing.tags.some((tag) => vibe.tags.includes(tag))
+          );
+        });
+        if (!vibeMatch) return false;
+      }
       return true;
     });
 
@@ -130,7 +182,7 @@ export default function SearchScreen() {
     });
 
     return filtered;
-  }, [query, selectedCity, maxPrice, selectedType, minRarity, sortBy]);
+  }, [query, selectedCity, maxPrice, selectedType, minRarity, sortBy, selectedVibes]);
 
   const cityOptions = useMemo(
     () => [{ label: 'ALL', value: null as string | null }, ...cities.map((c) => ({ label: c.toUpperCase(), value: c }))],
@@ -142,7 +194,9 @@ export default function SearchScreen() {
     [propertyTypes],
   );
 
-  const hasFilters = !!(query.trim() || selectedCity || maxPrice !== null || selectedType || minRarity !== null || sortBy !== 'rarity');
+  const hasFilters = !!(query.trim() || selectedCity || maxPrice !== null || selectedType || minRarity !== null || sortBy !== 'rarity' || selectedVibes.length > 0);
+  const toggleVibe = (id: VibeId) =>
+    setSelectedVibes((prev) => prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]);
   const { vaultDone } = useVault();
 
   // ── Wordmark unlock-reveal animation ────────────────────────────────────────
@@ -192,6 +246,7 @@ export default function SearchScreen() {
     setSelectedType(null);
     setMinRarity(null);
     setSortBy('rarity');
+    setSelectedVibes([]);
   };
 
   return (
@@ -243,6 +298,25 @@ export default function SearchScreen() {
             placeholderTextColor={MUTED}
             style={styles.searchInput}
           />
+
+          {/* ── Vibe chips ── */}
+          <Text style={styles.filterLabel}>VIBE</Text>
+          <View style={styles.vibeRow}>
+            {VIBES.map((vibe) => {
+              const active = selectedVibes.includes(vibe.id);
+              return (
+                <Pressable
+                  key={vibe.id}
+                  onPress={() => toggleVibe(vibe.id)}
+                  style={[styles.vibeChip, active && styles.vibeChipActive]}
+                >
+                  <Text style={[styles.vibeChipText, active && styles.vibeChipTextActive]}>
+                    {vibe.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
           <Text style={styles.filterLabel}>LOCATION</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
@@ -569,6 +643,33 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   chipTextActive: {
+    color: BG,
+  },
+
+  // Vibe chips
+  vibeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  vibeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: GOLD,
+    borderRadius: 1,
+  },
+  vibeChipActive: {
+    backgroundColor: GOLD,
+  },
+  vibeChipText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: GOLD,
+    letterSpacing: 1.5,
+  },
+  vibeChipTextActive: {
     color: BG,
   },
 
