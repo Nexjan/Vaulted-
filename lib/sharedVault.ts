@@ -60,7 +60,11 @@ export function useSharedVault() {
           .select('id, slug, display_name, is_public')
           .eq('user_id', user.id)
           .maybeSingle();
-        if (fetchErr) console.error('[sharedVault] pre-save fetch:', fetchErr.message);
+        if (fetchErr) {
+          console.error('[sharedVault] pre-save fetch:', fetchErr.message, fetchErr.code);
+          setError(`Fetch failed: ${fetchErr.message} (${fetchErr.code})`);
+          return;
+        }
 
         if (current) {
           const patch: Record<string, unknown> = {
@@ -75,8 +79,8 @@ export function useSharedVault() {
             .select('id, slug, display_name, is_public')
             .single();
           if (updateErr) {
-            console.error('[sharedVault] update:', updateErr.message);
-            setError('Could not save — try again.');
+            console.error('[sharedVault] update:', updateErr.message, updateErr.code);
+            setError(`Update failed: ${updateErr.message} (${updateErr.code})`);
           } else if (data) {
             setVault(data as SharedVault);
           }
@@ -93,8 +97,8 @@ export function useSharedVault() {
             .select('id, slug, display_name, is_public')
             .single();
           if (insertErr) {
-            console.error('[sharedVault] insert:', insertErr.message);
-            setError('Could not enable sharing — try again.');
+            console.error('[sharedVault] insert:', insertErr.message, insertErr.code);
+            setError(`Insert failed: ${insertErr.message} (${insertErr.code})`);
           } else if (data) {
             setVault(data as SharedVault);
           }
