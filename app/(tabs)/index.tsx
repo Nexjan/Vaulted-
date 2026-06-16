@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SkeletonBlock } from '../../components/Skeleton';
 import { useVault } from '../../lib/vaultContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -345,6 +346,7 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
   const { webHandlers, tiltStyle, glow } = useTilt();
+  const imgOpacity = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
 
   return (
     <Pressable
@@ -354,7 +356,16 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
     >
       {({ pressed }) => (
         <Animated.View style={[styles.hero, tiltStyle, pressed && styles.heroPressed]}>
-          <Image source={{ uri: listing.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+          <SkeletonBlock style={StyleSheet.absoluteFill} />
+          <Animated.Image
+            source={{ uri: listing.imageUrl }}
+            style={[styles.heroImage, { opacity: imgOpacity }]}
+            resizeMode="cover"
+            onLoad={() => {
+              if (REDUCE_MOTION) return;
+              Animated.timing(imgOpacity, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+            }}
+          />
           <View style={styles.heroOverlay} />
           <Text style={styles.heroNumber}>{num}</Text>
           <View style={styles.heroBottom}>
@@ -397,6 +408,7 @@ function EditorialRow({ listing, number }: { listing: Listing; number: number })
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
   const { webHandlers, tiltStyle, glow } = useTilt();
+  const imgOpacity = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
 
   return (
     <Pressable
@@ -407,7 +419,18 @@ function EditorialRow({ listing, number }: { listing: Listing; number: number })
       {({ pressed }) => (
         <Animated.View style={[styles.row, tiltStyle, pressed && styles.rowPressed]}>
           <Text style={styles.rowNumber}>{num}</Text>
-          <Image source={{ uri: listing.imageUrl }} style={styles.rowImage} resizeMode="cover" />
+          <View style={styles.rowImageWrap}>
+            <SkeletonBlock style={StyleSheet.absoluteFill} />
+            <Animated.Image
+              source={{ uri: listing.imageUrl }}
+              style={[StyleSheet.absoluteFill, { opacity: imgOpacity }]}
+              resizeMode="cover"
+              onLoad={() => {
+                if (REDUCE_MOTION) return;
+                Animated.timing(imgOpacity, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+              }}
+            />
+          </View>
           <View style={styles.rowBody}>
             <Text style={styles.rowTitle} numberOfLines={2}>{listing.title}</Text>
             <Text style={styles.rowLocation}>
@@ -741,9 +764,10 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     opacity: 0.85,
   },
-  rowImage: {
+  rowImageWrap: {
     width: 90,
     height: 68,
+    overflow: 'hidden',
   },
   rowBody: {
     flex: 1,
