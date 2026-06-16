@@ -45,6 +45,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="surprise"
+        options={{
+          title: 'Surprise',
+          tabBarIcon: ({ color, size }) => <Ionicons name="compass-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="saved"
         options={{
           title: 'Vault',

@@ -3,6 +3,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
 import { useAuth } from './auth';
+import { useVaultSeal } from './vaultSeal';
 
 const LOCAL_KEY = 'vaulted:favorite-listing-ids';
 
@@ -25,6 +26,7 @@ const FavoritesContext = createContext<FavoritesContextValue | null>(null);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { triggerSeal } = useVaultSeal();
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -94,7 +96,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   // ── 4. Toggle: optimistic update + optional cloud write ───────────────────
   const toggleFavorite = useCallback((id: string) => {
     const isAdding = !favoriteIds.includes(id);
-    if (isAdding) fireVaultHaptic();
+    if (isAdding) { fireVaultHaptic(); triggerSeal(); }
 
     setFavoriteIds((prev) => {
       const adding = !prev.includes(id);
