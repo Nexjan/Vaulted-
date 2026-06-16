@@ -1,8 +1,15 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef } from 'react';
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Listing } from '../lib/types';
 import { Badge } from './Badge';
 import { FavoriteButton } from './FavoriteButton';
+import { SkeletonBlock } from './Skeleton';
+
+const REDUCE_MOTION =
+  Platform.OS === 'web' &&
+  typeof window !== 'undefined' &&
+  (() => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
 
 interface Props {
   listing: Listing;
@@ -14,6 +21,7 @@ interface Props {
 
 export function ListingCard({ listing, badge, footnote }: Props) {
   const router = useRouter();
+  const imgOpacity = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
 
   return (
     <Pressable
@@ -21,7 +29,16 @@ export function ListingCard({ listing, badge, footnote }: Props) {
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       <View style={styles.thumbnail}>
-        <Image source={{ uri: listing.imageUrl }} style={styles.image} resizeMode="cover" />
+        <SkeletonBlock style={StyleSheet.absoluteFill} />
+        <Animated.Image
+          source={{ uri: listing.imageUrl }}
+          style={[styles.image, { opacity: imgOpacity }]}
+          resizeMode="cover"
+          onLoad={() => {
+            if (REDUCE_MOTION) return;
+            Animated.timing(imgOpacity, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+          }}
+        />
         <FavoriteButton listingId={listing.id} style={styles.favoriteButton} />
         {badge ? <Badge label={badge.label} tone={badge.tone} style={styles.badge} /> : null}
       </View>

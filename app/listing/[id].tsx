@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef } from 'react';
+import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { listings } from '../../data/listings';
@@ -9,6 +9,12 @@ import { getUniqueness } from '../../lib/uniqueness';
 import { comparePrice } from '../../lib/pricing';
 import { getPriceHistory } from '../../lib/priceHistory';
 import { useFavorites } from '../../lib/favorites';
+import { SkeletonBlock } from '../../components/Skeleton';
+
+const REDUCE_MOTION =
+  Platform.OS === 'web' &&
+  typeof window !== 'undefined' &&
+  (() => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
 
 const BG = '#0A0A0A';
 const TEXT = '#F5F3EF';
@@ -21,6 +27,7 @@ export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isFavorite, toggleFavorite } = useFavorites();
   const listing = useMemo(() => listings.find((item) => item.id === id), [id]);
+  const heroOpacity = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
 
   if (!listing) {
     return (
@@ -50,7 +57,16 @@ export default function ListingDetailScreen() {
 
       {/* ── Hero image ── */}
       <View style={styles.hero}>
-        <Image source={{ uri: listing.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+        <SkeletonBlock style={StyleSheet.absoluteFill} />
+        <Animated.Image
+          source={{ uri: listing.imageUrl }}
+          style={[styles.heroImage, { opacity: heroOpacity }]}
+          resizeMode="cover"
+          onLoad={() => {
+            if (REDUCE_MOTION) return;
+            Animated.timing(heroOpacity, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+          }}
+        />
         <View style={styles.heroOverlay} />
         <Pressable
           onPress={() => toggleFavorite(listing.id)}
@@ -316,7 +332,7 @@ const styles = StyleSheet.create({
   },
   dealBadge: {
     borderWidth: 1,
-    borderColor: GOLD,
+    borderColor: '#5DA87A',
     borderRadius: 1,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -327,7 +343,7 @@ const styles = StyleSheet.create({
   dealBadgeText: {
     fontSize: 8,
     fontWeight: '700',
-    color: GOLD,
+    color: '#5DA87A',
     letterSpacing: 1.5,
   },
   dealCopy: {
