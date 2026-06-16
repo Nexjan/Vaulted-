@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useVault } from '../../lib/vaultContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -141,6 +142,7 @@ export default function SearchScreen() {
   );
 
   const hasFilters = !!(query.trim() || selectedCity || maxPrice !== null || selectedType || minRarity !== null || sortBy !== 'rarity');
+  const { vaultDone } = useVault();
 
   // ── Wordmark unlock-reveal animation ────────────────────────────────────────
   const letterAnims = useRef(
@@ -154,7 +156,7 @@ export default function SearchScreen() {
   const shimmerFired = useRef(false);
 
   useEffect(() => {
-    if (REDUCE_MOTION) return;
+    if (REDUCE_MOTION || !vaultDone) return;
     const STAGGER = 40;
     const anims = WM_LETTERS.map((_, i) => {
       const delay = i === 0 ? 0 : 180 + (i - 1) * STAGGER;
@@ -168,10 +170,10 @@ export default function SearchScreen() {
     });
     Animated.parallel(anims).start();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [vaultDone]);
 
   useEffect(() => {
-    if (REDUCE_MOTION || wmWidth === 0 || shimmerFired.current) return;
+    if (REDUCE_MOTION || wmWidth === 0 || !vaultDone || shimmerFired.current) return;
     shimmerFired.current = true;
     // last letter finishes at ≈ 180 + 5*40 + 320 = 700ms; add 80ms cushion
     const t = setTimeout(() => {
@@ -179,7 +181,7 @@ export default function SearchScreen() {
       Animated.timing(shimmerX, { toValue: wmWidth + 100, duration: 550, easing: Easing.inOut(Easing.ease), useNativeDriver: true }).start();
     }, 780);
     return () => clearTimeout(t);
-  }, [wmWidth]);
+  }, [wmWidth, vaultDone]);
   // ─────────────────────────────────────────────────────────────────────────────
 
   const clearAll = () => {
