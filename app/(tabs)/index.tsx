@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { Animated, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -82,6 +82,8 @@ const SORT_OPTIONS = [
 ];
 type SortValue = 'rarity' | 'price_asc' | 'price_desc' | 'rating';
 
+const WM_LETTERS = 'VAULTED'.split('');
+
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
@@ -140,6 +142,46 @@ export default function SearchScreen() {
 
   const hasFilters = !!(query.trim() || selectedCity || maxPrice !== null || selectedType || minRarity !== null || sortBy !== 'rarity');
 
+  // ── Wordmark unlock-reveal animation ────────────────────────────────────────
+  const letterAnims = useRef(
+    WM_LETTERS.map((_, i) => ({
+      opacity: new Animated.Value(REDUCE_MOTION ? 1 : 0),
+      x: new Animated.Value(REDUCE_MOTION ? 0 : i === 0 ? 0 : -28),
+    }))
+  ).current;
+  const shimmerX    = useRef(new Animated.Value(-100)).current;
+  const [wmWidth, setWmWidth] = useState(0);
+  const shimmerFired = useRef(false);
+
+  useEffect(() => {
+    if (REDUCE_MOTION) return;
+    const STAGGER = 40;
+    const anims = WM_LETTERS.map((_, i) => {
+      const delay = i === 0 ? 0 : 180 + (i - 1) * STAGGER;
+      return Animated.sequence([
+        Animated.delay(delay),
+        Animated.parallel([
+          Animated.timing(letterAnims[i].opacity, { toValue: 1, duration: 200, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+          ...(i > 0 ? [Animated.timing(letterAnims[i].x, { toValue: 0, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true })] : []),
+        ]),
+      ]);
+    });
+    Animated.parallel(anims).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (REDUCE_MOTION || wmWidth === 0 || shimmerFired.current) return;
+    shimmerFired.current = true;
+    // last letter finishes at ≈ 180 + 5*40 + 320 = 700ms; add 80ms cushion
+    const t = setTimeout(() => {
+      shimmerX.setValue(-100);
+      Animated.timing(shimmerX, { toValue: wmWidth + 100, duration: 550, easing: Easing.inOut(Easing.ease), useNativeDriver: true }).start();
+    }, 780);
+    return () => clearTimeout(t);
+  }, [wmWidth]);
+  // ─────────────────────────────────────────────────────────────────────────────
+
   const clearAll = () => {
     setQuery('');
     setSelectedCity(null);
@@ -155,7 +197,26 @@ export default function SearchScreen() {
 
         {/* ── Wordmark header ── */}
         <View style={styles.header}>
-          <Text style={styles.wordmark}>VAULTED</Text>
+          <View
+            style={styles.wordmarkRow}
+            onLayout={(e) => setWmWidth(e.nativeEvent.layout.width)}
+          >
+            {WM_LETTERS.map((letter, i) => (
+              <Animated.Text
+                key={i}
+                style={[
+                  styles.wordmark,
+                  { opacity: letterAnims[i].opacity, transform: [{ translateX: letterAnims[i].x }] },
+                ]}
+              >
+                {letter}
+              </Animated.Text>
+            ))}
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.shimmerBar, { transform: [{ translateX: shimmerX }] }]}
+            />
+          </View>
           <View style={styles.headerMeta}>
             <Text style={styles.headerLabel}>
               {results.length === 1 ? '1 STAY' : `${results.length} STAYS`}
@@ -316,6 +377,7 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
               <Ionicons name={active ? 'heart' : 'heart-outline'} size={22} color={active ? GOLD : TEXT} />
             </Pressable>
           </View>
+          {/* gold edge-glow that shifts with tilt */}
           <Animated.View pointerEvents="none" style={[styles.heroGlow, { opacity: glow }]} />
         </Animated.View>
       )}
@@ -389,6 +451,10 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 16,
   },
+  wordmarkRow: {
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
   wordmark: {
     fontSize: 64,
     fontWeight: '900',
@@ -396,6 +462,14 @@ const styles = StyleSheet.create({
     letterSpacing: -2,
     lineHeight: 66,
     fontFamily: 'Georgia',
+  },
+  shimmerBar: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 70,
+    backgroundColor: GOLD,
+    opacity: 0.25,
   },
   headerMeta: {
     marginTop: 12,
