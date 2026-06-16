@@ -17,7 +17,7 @@ const GOLD = '#C8A86B';
 const BG = '#0A0A0A';
 const PANEL = '#0E0E0E';
 
-// ─── session tracking ──────────────────────────────────────────
+// ─── session tracking ──────────────────────────────────────────────────────
 let _mobileHasPlayed = false;
 
 function alreadyPlayed(): boolean {
@@ -42,13 +42,14 @@ function reducedMotion(): boolean {
   catch { return false; }
 }
 
-// ─── component ──────────────────────────────────────────────────────────────
+// ─── component ────────────────────────────────────────────────────────────
 interface Props { onDone: () => void; }
 
 export function VaultEntry({ onDone }: Props) {
   const skip = useRef(alreadyPlayed() || reducedMotion()).current;
   const [active, setActive] = useState(!skip);
 
+  // Capture dimensions at mount — stable for the ~1.5s animation
   const W = useRef(Dimensions.get('window').width).current;
 
   const wordmarkAlpha  = useRef(new Animated.Value(0)).current;
@@ -62,14 +63,18 @@ export function VaultEntry({ onDone }: Props) {
     if (skip) { onDone(); return; }
 
     const EASE     = Easing.bezier(0.4, 0, 0.2, 1);
-    const EASE_OUT = Easing.bezier(0.0, 0, 0.4, 1);
+    const EASE_OUT = Easing.bezier(0.0, 0, 0.4, 1); // heavy inertia at start, clears fast
 
     Animated.sequence([
+      // 1 — brand materialises
       Animated.timing(wordmarkAlpha, { toValue: 1, duration: 380, easing: EASE, useNativeDriver: true }),
       Animated.delay(320),
+      // 2 — gold seam traces along the split
       Animated.timing(seamAlpha, { toValue: 1, duration: 460, easing: EASE, useNativeDriver: true }),
+      // 3 — seam blooms with glow
       Animated.timing(seamGlowAlpha, { toValue: 1, duration: 200, easing: EASE, useNativeDriver: true }),
       Animated.delay(240),
+      // 4 — vault doors swing open
       Animated.parallel([
         Animated.timing(leftX,  { toValue: -(W / 2 + 6), duration: 680, easing: EASE_OUT, useNativeDriver: true }),
         Animated.timing(rightX, { toValue:   W / 2 + 6,  duration: 680, easing: EASE_OUT, useNativeDriver: true }),
@@ -77,6 +82,7 @@ export function VaultEntry({ onDone }: Props) {
         Animated.timing(seamAlpha,     { toValue: 0, duration: 220, useNativeDriver: true }),
         Animated.timing(wordmarkAlpha, { toValue: 0, duration: 200, useNativeDriver: true }),
       ]),
+      // 5 — dissolve overlay
       Animated.timing(rootAlpha, { toValue: 0, duration: 280, easing: EASE, useNativeDriver: true }),
     ]).start(({ finished }) => {
       if (finished) { markPlayed(); setActive(false); onDone(); }
@@ -100,18 +106,27 @@ export function VaultEntry({ onDone }: Props) {
         {/* ── Left door panel — left half of vault image ── */}
         <Animated.View style={[styles.panelLeft, { width: halfW, transform: [{ translateX: leftX }] }]}>
           <Image source={{ uri: VAULT_BG_URI }} style={[styles.panelImg, { width: W, left: 0 }]} resizeMode="cover" />
+          <View style={styles.panelOverlay} />
           <View style={styles.leftEdgeShadow} />
         </Animated.View>
 
         {/* ── Right door panel — right half of vault image ── */}
         <Animated.View style={[styles.panelRight, { width: halfW, transform: [{ translateX: rightX }] }]}>
           <Image source={{ uri: VAULT_BG_URI }} style={[styles.panelImg, { width: W, right: 0 }]} resizeMode="cover" />
+          <View style={styles.panelOverlay} />
           <View style={styles.rightEdgeShadow} />
         </Animated.View>
 
-        {/* ── Gold seam ── */}
-        <Animated.View style={[styles.seam, { left: halfW - 1, opacity: seamAlpha }]} pointerEvents="none" />
-        <Animated.View style={[styles.seamGlow, { left: halfW - 14, opacity: seamGlowAlpha }]} pointerEvents="none" />
+        {/* ── Gold seam — thin line at the split ── */}
+        <Animated.View
+          style={[styles.seam, { left: halfW - 1, opacity: seamAlpha }]}
+          pointerEvents="none"
+        />
+        {/* soft glow halo around seam */}
+        <Animated.View
+          style={[styles.seamGlow, { left: halfW - 14, opacity: seamGlowAlpha }]}
+          pointerEvents="none"
+        />
 
         {/* ── Wordmark ── */}
         <Animated.View style={[styles.brandWrap, { opacity: wordmarkAlpha }]} pointerEvents="none">
@@ -143,6 +158,8 @@ const styles = StyleSheet.create({
   fill: {
     flex: 1,
   },
+
+  // ── Door panels ────────────────────────────────
   panelLeft: {
     position: 'absolute',
     top: 0,
@@ -155,6 +172,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
+  },
+  panelOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.52)',
   },
   leftEdgeShadow: {
     position: 'absolute',
@@ -180,6 +205,8 @@ const styles = StyleSheet.create({
     width: 20,
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
+
+  // ── Seam ───────────────────────────────────────────
   seam: {
     position: 'absolute',
     top: 0,
@@ -195,6 +222,8 @@ const styles = StyleSheet.create({
     backgroundColor: GOLD,
     opacity: 0.18,
   },
+
+  // ── Brand ────────────────────────────────────────────
   brandWrap: {
     position: 'absolute',
     top: 0,
@@ -224,6 +253,8 @@ const styles = StyleSheet.create({
     color: GOLD,
     letterSpacing: 3.5,
   },
+
+  // ── Skip ─────────────────────────────────────────────
   skipWrap: {
     position: 'absolute',
     bottom: 44,
