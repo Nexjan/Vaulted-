@@ -62,7 +62,7 @@ export function useSharedVault() {
           .maybeSingle();
         if (fetchErr) {
           console.error('[sharedVault] pre-save fetch:', fetchErr.message, fetchErr.code);
-          setError(`Fetch failed: ${fetchErr.message} (${fetchErr.code})`);
+          setError('Could not reach vault — try again.');
           return;
         }
 
@@ -80,7 +80,7 @@ export function useSharedVault() {
             .single();
           if (updateErr) {
             console.error('[sharedVault] update:', updateErr.message, updateErr.code);
-            setError(`Update failed: ${updateErr.message} (${updateErr.code})`);
+            setError('Could not save — try again.');
           } else if (data) {
             setVault(data as SharedVault);
           }
@@ -98,7 +98,7 @@ export function useSharedVault() {
             .single();
           if (insertErr) {
             console.error('[sharedVault] insert:', insertErr.message, insertErr.code);
-            setError(`Insert failed: ${insertErr.message} (${insertErr.code})`);
+            setError('Could not enable sharing — try again.');
           } else if (data) {
             setVault(data as SharedVault);
           }
