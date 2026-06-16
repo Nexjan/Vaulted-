@@ -51,6 +51,7 @@ export function VaultEntry({ onDone }: Props) {
 
   // Capture dimensions at mount — stable for the ~1.5s animation
   const W = useRef(Dimensions.get('window').width).current;
+  const H = useRef(Dimensions.get('window').height).current;
 
   const wordmarkAlpha  = useRef(new Animated.Value(0)).current;
   const seamAlpha      = useRef(new Animated.Value(0)).current;
@@ -105,14 +106,14 @@ export function VaultEntry({ onDone }: Props) {
       <Pressable style={styles.fill} onPress={dismiss}>
         {/* ── Left door panel — left half of vault image ── */}
         <Animated.View style={[styles.panelLeft, { width: halfW, transform: [{ translateX: leftX }] }]}>
-          <Image source={{ uri: VAULT_BG_URI }} style={[styles.panelImg, { width: W, left: 0 }]} resizeMode="cover" />
+          <Image source={{ uri: VAULT_BG_URI }} style={[styles.panelImg, { width: W, left: 0, height: H * 0.5 }]} resizeMode="cover" />
           <View style={styles.panelOverlay} />
           <View style={styles.leftEdgeShadow} />
         </Animated.View>
 
         {/* ── Right door panel — right half of vault image ── */}
         <Animated.View style={[styles.panelRight, { width: halfW, transform: [{ translateX: rightX }] }]}>
-          <Image source={{ uri: VAULT_BG_URI }} style={[styles.panelImg, { width: W, right: 0 }]} resizeMode="cover" />
+          <Image source={{ uri: VAULT_BG_URI }} style={[styles.panelImg, { width: W, right: 0, height: H * 0.5 }]} resizeMode="cover" />
           <View style={styles.panelOverlay} />
           <View style={styles.rightEdgeShadow} />
         </Animated.View>
@@ -171,7 +172,6 @@ const styles = StyleSheet.create({
   panelImg: {
     position: 'absolute',
     top: 0,
-    bottom: 0,
   },
   panelOverlay: {
     position: 'absolute',
