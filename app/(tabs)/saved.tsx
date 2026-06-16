@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Image, Pressable, StyleSheet, Text, View, FlatList } from 'react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,97 +7,188 @@ import { listings } from '../../data/listings';
 import { useFavorites } from '../../lib/favorites';
 import { getUniqueness } from '../../lib/uniqueness';
 import { Listing } from '../../lib/types';
+import { SkeletonBlock } from '../../components/Skeleton';
+
+const REDUCE_MOTION =
+  Platform.OS === 'web' &&
+  typeof window !== 'undefined' &&
+  (() => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
 
 const BG = '#0A0A0A';
 const TEXT = '#F5F3EF';
 const GOLD = '#C8A86B';
 const MUTED = '#555555';
 const DIVIDER = '#1E1E1E';
+const SURFACE = '#141414';
+
+function VaultCard({ listing, index }: { listing: Listing; index: number }) {
+  const router = useRouter();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const uniqueness = getUniqueness(listing);
+  const active = isFavorite(listing.id);
+
+  // Entrance: scale + opacity (native driver)
+  const entranceScale = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0.93)).current;
+  const entranceOpacity = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
+
+  // 3D tilt + glow (non-native driver)
+  const tiltX = useRef(new Animated.Value(0)).current;
+  const tiltY = useRef(new Animated.Value(0)).current;
+  const glowOpacity = useRef(new Animated.Value(0)).current;
+
+  // Image fade (native driver)
+  const imgOpacity = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
+
+  useEffect(() => {
+    if (REDUCE_MOTION) return;
+    Animated.parallel([
+      Animated.spring(entranceScale, {
+        toValue: 1,
+        delay: index * 60,
+        tension: 120,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.timing(entranceOpacity, {
+        toValue: 1,
+        delay: index * 60,
+        duration: 280,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onPressIn = () => {
+    if (REDUCE_MOTION) return;
+    Animated.parallel([
+      Animated.spring(tiltX, { toValue: 5, useNativeDriver: false, tension: 200, friction: 7 }),
+      Animated.spring(tiltY, { toValue: -3, useNativeDriver: false, tension: 200, friction: 7 }),
+      Animated.timing(glowOpacity, { toValue: 1, duration: 100, useNativeDriver: false }),
+    ]).start();
+  };
+
+  const onPressOut = () => {
+    if (REDUCE_MOTION) return;
+    Animated.parallel([
+      Animated.spring(tiltX, { toValue: 0, useNativeDriver: false, tension: 200, friction: 7 }),
+      Animated.spring(tiltY, { toValue: 0, useNativeDriver: false, tension: 200, friction: 7 }),
+      Animated.timing(glowOpacity, { toValue: 0, duration: 200, useNativeDriver: false }),
+    ]).start();
+  };
+
+  const rotateX = tiltX.interpolate({ inputRange: [-10, 10], outputRange: ['-10deg', '10deg'] });
+  const rotateY = tiltY.interpolate({ inputRange: [-10, 10], outputRange: ['-10deg', '10deg'] });
+  const serial = `VLT-${listing.id.padStart(4, '0')}`;
+
+  return (
+    <Animated.View style={[styles.cardOuter, { opacity: entranceOpacity, transform: [{ scale: entranceScale }] }]}>
+      <Pressable
+        onPress={() => router.push(`/listing/${listing.id}`)}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+      >
+        <Animated.View style={[styles.card, { transform: [{ perspective: 600 }, { rotateX }, { rotateY }] }]}>
+
+          {/* Gold accent bar */}
+          <View style={styles.accentBar} />
+
+          {/* Image */}
+          <View style={styles.imageWrap}>
+            <SkeletonBlock style={StyleSheet.absoluteFill} />
+            <Animated.Image
+              source={{ uri: listing.imageUrl }}
+              style={[styles.cardImage, { opacity: imgOpacity }]}
+              resizeMode="cover"
+              onLoad={() => {
+                if (REDUCE_MOTION) return;
+                Animated.timing(imgOpacity, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+              }}
+            />
+            <View style={styles.serialTag}>
+              <Text style={styles.serialText}>{serial}</Text>
+            </View>
+          </View>
+
+          {/* Body */}
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitle} numberOfLines={1}>{listing.title}</Text>
+            <Text style={styles.cardLocation}>
+              {listing.city.toUpperCase()} · {listing.propertyType.toUpperCase()}
+            </Text>
+            <View style={styles.cardMeta}>
+              <Text style={styles.cardRarity}>◆ {uniqueness.score}</Text>
+              <Text style={styles.cardPrice}>
+                ${listing.pricePerNight}<Text style={styles.cardUnit}>/nt</Text>
+              </Text>
+              <Pressable
+                onPress={(e) => { e.stopPropagation(); toggleFavorite(listing.id); }}
+                hitSlop={8}
+                style={styles.heartBtn}
+              >
+                <Ionicons name={active ? 'heart' : 'heart-outline'} size={16} color={active ? GOLD : MUTED} />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Gold glow edge on tilt */}
+          <Animated.View pointerEvents="none" style={[styles.cardGlow, { opacity: glowOpacity }]} />
+
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export default function SavedScreen() {
   const { favoriteIds, isLoaded } = useFavorites();
-  const router = useRouter();
 
-  const saved = useMemo(
+  const vaulted = useMemo(
     () => listings.filter((listing) => favoriteIds.includes(listing.id)),
     [favoriteIds],
   );
 
+  const totalValue = vaulted.reduce((sum, l) => sum + l.pricePerNight, 0);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <FlatList
-        data={saved}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View>
-            {/* ── Header ── */}
-            <View style={styles.header}>
-              <Text style={styles.wordmark}>YOUR{'\n'}VAULT</Text>
-              <View style={styles.headerMeta}>
-                <Text style={styles.headerLabel}>
-                  {saved.length > 0 ? `${saved.length} SAVED ${saved.length === 1 ? 'PROPERTY' : 'PROPERTIES'}` : 'SAVED PROPERTIES'}
-                </Text>
-                <View style={styles.headerLine} />
-              </View>
-            </View>
-            <View style={styles.divider} />
-          </View>
-        }
-        renderItem={({ item, index }) => <SavedRow listing={item} number={index + 1} router={router} />}
-        ListEmptyComponent={
-          isLoaded ? (
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>YOUR VAULT IS EMPTY</Text>
-              <Text style={styles.emptyHint}>
-                Tap the heart on any listing to save it here.
-              </Text>
-            </View>
-          ) : null
-        }
-      />
-    </SafeAreaView>
-  );
-}
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-function SavedRow({ listing, number, router }: { listing: Listing; number: number; router: ReturnType<typeof useRouter> }) {
-  const { isFavorite, toggleFavorite } = useFavorites();
-  const uniqueness = getUniqueness(listing);
-  const active = isFavorite(listing.id);
-  const num = String(number).padStart(2, '0');
-
-  return (
-    <View>
-      <Pressable
-        onPress={() => router.push(`/listing/${listing.id}`)}
-        style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-      >
-        <Text style={styles.rowNumber}>{num}</Text>
-        <Image source={{ uri: listing.imageUrl }} style={styles.rowImage} resizeMode="cover" />
-        <View style={styles.rowBody}>
-          <Text style={styles.rowTitle} numberOfLines={2}>{listing.title}</Text>
-          <Text style={styles.rowLocation}>
-            {listing.city.toUpperCase()} · {listing.propertyType.toUpperCase()}
-          </Text>
-          <View style={styles.rowMeta}>
-            <Text style={styles.rowRarity}>◆ {uniqueness.score}</Text>
-            <Text style={styles.rowPrice}>
-              ${listing.pricePerNight}
-              <Text style={styles.rowUnit}>/nt</Text>
-            </Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.wordmark}>THE{'\n'}VAULT</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{vaulted.length}</Text>
+              <Text style={styles.statLabel}>STAYS VAULTED</Text>
+            </View>
+            <View style={styles.statSep} />
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>${totalValue.toLocaleString()}</Text>
+              <Text style={styles.statLabel}>COMBINED $/NIGHT</Text>
+            </View>
           </View>
         </View>
-        <Pressable
-          onPress={(e) => { e.stopPropagation(); toggleFavorite(listing.id); }}
-          hitSlop={8}
-          style={styles.rowHeart}
-        >
-          <Ionicons name={active ? 'heart' : 'heart-outline'} size={16} color={active ? GOLD : MUTED} />
-        </Pressable>
-      </Pressable>
-      <View style={styles.divider} />
-    </View>
+
+        <View style={styles.divider} />
+
+        {/* Cards or empty state */}
+        {isLoaded && vaulted.length === 0 ? (
+          <View style={styles.empty}>
+            <Ionicons name="lock-closed-outline" size={36} color={GOLD} style={styles.emptyIcon} />
+            <Text style={styles.emptyTitle}>THE VAULT IS EMPTY</Text>
+            <Text style={styles.emptyHint}>Tap the heart on any listing to vault it here.</Text>
+          </View>
+        ) : (
+          <View style={styles.cards}>
+            {vaulted.map((listing, i) => (
+              <VaultCard key={listing.id} listing={listing} index={i} />
+            ))}
+          </View>
+        )}
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -114,7 +205,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 24,
-    paddingBottom: 16,
+    paddingBottom: 20,
   },
   wordmark: {
     fontSize: 56,
@@ -124,21 +215,35 @@ const styles = StyleSheet.create({
     lineHeight: 58,
     fontFamily: 'Georgia',
   },
-  headerMeta: {
-    marginTop: 14,
+  statsRow: {
+    marginTop: 18,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    borderWidth: 1,
+    borderColor: DIVIDER,
+    borderRadius: 2,
   },
-  headerLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: GOLD,
-    letterSpacing: 2.5,
-  },
-  headerLine: {
+  statBox: {
     flex: 1,
-    height: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: GOLD,
+    fontFamily: 'Georgia',
+    letterSpacing: -0.5,
+  },
+  statLabel: {
+    marginTop: 4,
+    fontSize: 8,
+    fontWeight: '700',
+    color: MUTED,
+    letterSpacing: 2,
+  },
+  statSep: {
+    width: 1,
     backgroundColor: DIVIDER,
   },
 
@@ -147,79 +252,109 @@ const styles = StyleSheet.create({
     backgroundColor: DIVIDER,
   },
 
-  // Editorial rows
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // Cards layout
+  cards: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 14,
+    paddingTop: 20,
+    gap: 16,
   },
-  rowPressed: {
-    backgroundColor: '#111111',
+
+  // VaultCard
+  cardOuter: {},
+  card: {
+    backgroundColor: SURFACE,
+    borderWidth: 1,
+    borderColor: 'rgba(200,168,107,0.14)',
+    overflow: 'hidden',
   },
-  rowNumber: {
-    width: 32,
-    fontSize: 20,
-    fontWeight: '900',
-    color: GOLD,
-    fontFamily: 'Georgia',
-    letterSpacing: -1,
-    textAlign: 'right',
-    opacity: 0.85,
+  accentBar: {
+    height: 2,
+    backgroundColor: GOLD,
   },
-  rowImage: {
-    width: 90,
-    height: 68,
+  imageWrap: {
+    height: 175,
+    backgroundColor: SURFACE,
   },
-  rowBody: {
-    flex: 1,
+  cardImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
-  rowTitle: {
-    fontSize: 14,
+  serialTag: {
+    position: 'absolute',
+    bottom: 10,
+    left: 12,
+    backgroundColor: 'rgba(10,10,10,0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  serialText: {
+    fontSize: 8,
     fontWeight: '700',
-    color: TEXT,
-    lineHeight: 19,
-    letterSpacing: -0.2,
+    color: GOLD,
+    letterSpacing: 2,
+    fontFamily: 'Georgia',
   },
-  rowLocation: {
+  cardBody: {
+    padding: 14,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: TEXT,
+    letterSpacing: -0.3,
+    fontFamily: 'Georgia',
+  },
+  cardLocation: {
+    marginTop: 5,
     fontSize: 9,
     fontWeight: '600',
     color: MUTED,
     letterSpacing: 1.5,
-    marginTop: 5,
   },
-  rowMeta: {
+  cardMeta: {
+    marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginTop: 7,
   },
-  rowRarity: {
-    fontSize: 10,
+  cardRarity: {
+    fontSize: 11,
     fontWeight: '700',
     color: GOLD,
     letterSpacing: 0.5,
   },
-  rowPrice: {
-    fontSize: 13,
+  cardPrice: {
+    flex: 1,
+    fontSize: 15,
     fontWeight: '700',
     color: TEXT,
+    textAlign: 'right',
   },
-  rowUnit: {
+  cardUnit: {
     fontSize: 10,
     fontWeight: '400',
     color: MUTED,
   },
-  rowHeart: {
-    padding: 8,
+  heartBtn: {
+    padding: 4,
+  },
+  cardGlow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 2,
+    borderColor: 'rgba(200,168,107,0.65)',
   },
 
   // Empty state
   empty: {
-    paddingTop: 72,
+    paddingTop: 80,
     paddingHorizontal: 20,
     alignItems: 'center',
+  },
+  emptyIcon: {
+    marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 10,
@@ -233,5 +368,6 @@ const styles = StyleSheet.create({
     color: MUTED,
     textAlign: 'center',
     lineHeight: 20,
+    fontStyle: 'italic',
   },
 });

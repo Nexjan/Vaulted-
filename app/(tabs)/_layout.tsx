@@ -46,8 +46,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="saved"
         options={{
-          title: 'Saved',
-          tabBarIcon: ({ color, size }) => <Ionicons name="heart" color={color} size={size} />,
+          title: 'Vault',
+          tabBarIcon: ({ color, size }) => <Ionicons name="lock-closed" color={color} size={size} />,
         }}
       />
     </Tabs>

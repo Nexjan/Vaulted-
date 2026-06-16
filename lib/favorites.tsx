@@ -1,5 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { Platform } from 'react-native';
+
+const fireVaultHaptic = () => {
+  if (Platform.OS === 'web') return;
+  try {
+    const Haptics = require('expo-haptics');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  } catch {}
+};
 
 const STORAGE_KEY = 'vaulted:favorite-listing-ids';
 
@@ -39,7 +48,9 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
   const toggleFavorite = (id: string) => {
     setFavoriteIds((current) => {
-      const next = current.includes(id) ? current.filter((existing) => existing !== id) : [...current, id];
+      const isAdding = !current.includes(id);
+      const next = isAdding ? [...current, id] : current.filter((existing) => existing !== id);
+      if (isAdding) fireVaultHaptic();
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
       return next;
     });
