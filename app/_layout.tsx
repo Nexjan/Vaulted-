@@ -42,6 +42,7 @@ function AppShell() {
           name="listing/[id]"
           options={{ title: '', headerTransparent: true, headerTintColor: '#F5F3EF' }}
         />
+        <Stack.Screen name="vault/[slug]" options={{ headerShown: false }} />
       </Stack>
       <VaultEntry onDone={() => setVaultDone(true)} />
       {showOnboarding && <OnboardingModal onDone={handleOnboardingDone} />}

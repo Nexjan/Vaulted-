@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,8 @@ import { getUniqueness } from '../../lib/uniqueness';
 import { Listing } from '../../lib/types';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { usePriceAlerts, getPriceDrop, PriceDrop } from '../../lib/priceAlerts';
+import { useAuth } from '../../lib/auth';
+import { useSharedVault } from '../../lib/sharedVault';
 
 const REDUCE_MOTION =
   Platform.OS === 'web' &&
@@ -21,6 +23,101 @@ const GOLD = '#C8A86B';
 const MUTED = '#555555';
 const DIVIDER = '#1E1E1E';
 const SURFACE = '#141414';
+
+function SharePanel() {
+  const { user } = useAuth();
+  const { vault, loading, saving, setPublic } = useSharedVault();
+  const [nameInput, setNameInput] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (vault?.display_name) setNameInput(vault.display_name);
+  }, [vault?.display_name]);
+
+  if (!user || loading) return null;
+
+  const isPublic = vault?.is_public ?? false;
+
+  const shareUrl = vault?.slug
+    ? (typeof window !== 'undefined'
+        ? `${window.location.origin}/vault/${vault.slug}`
+        : `vaulted.app/vault/${vault.slug}`)
+    : null;
+
+  const handleToggle = () => setPublic(!isPublic);
+
+  const handleCopy = async () => {
+    if (!shareUrl) return;
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    }
+  };
+
+  const handleSaveName = () => {
+    if (nameInput.trim()) setPublic(isPublic, nameInput.trim());
+  };
+
+  return (
+    <View style={sp.container}>
+      <Pressable style={sp.toggleRow} onPress={handleToggle} disabled={saving}>
+        <View style={{ flex: 1 }}>
+          <Text style={sp.toggleLabel}>SHARE VAULT</Text>
+          {isPublic && (
+            <Text style={sp.toggleSub}>Anyone with the link can browse your collection</Text>
+          )}
+        </View>
+        <View style={[sp.pill, isPublic && sp.pillOn]}>
+          <Text style={[sp.pillText, isPublic && sp.pillTextOn]}>
+            {saving ? '…' : isPublic ? 'PUBLIC' : 'PRIVATE'}
+          </Text>
+        </View>
+      </Pressable>
+
+      {isPublic && (
+        <View style={sp.expanded}>
+          {/* Vault display name */}
+          <Text style={sp.fieldLabel}>VAULT NAME</Text>
+          <View style={sp.nameRow}>
+            <TextInput
+              style={sp.nameInput}
+              value={nameInput}
+              onChangeText={setNameInput}
+              placeholder="My Vault"
+              placeholderTextColor={MUTED}
+              maxLength={40}
+              returnKeyType="done"
+              onSubmitEditing={handleSaveName}
+            />
+            <Pressable style={sp.saveBtn} onPress={handleSaveName}>
+              <Text style={sp.saveBtnText}>SAVE</Text>
+            </Pressable>
+          </View>
+
+          {/* Share link */}
+          {shareUrl && (
+            <>
+              <Text style={[sp.fieldLabel, { marginTop: 16 }]}>SHAREABLE LINK</Text>
+              <View style={sp.linkRow}>
+                <Text style={sp.linkText} numberOfLines={1} selectable>{shareUrl}</Text>
+                <Pressable style={sp.copyBtn} onPress={handleCopy}>
+                  <Ionicons
+                    name={copied ? 'checkmark' : 'copy-outline'}
+                    size={13}
+                    color={GOLD}
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text style={sp.copyBtnText}>{copied ? 'COPIED' : 'COPY'}</Text>
+                </Pressable>
+              </View>
+            </>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
 
 function VaultCard({ listing, index, drop }: { listing: Listing; index: number; drop: PriceDrop | null }) {
   const router = useRouter();
@@ -204,6 +301,9 @@ export default function SavedScreen() {
             </View>
           </View>
         </View>
+
+        {/* Share vault panel (logged-in only) */}
+        <SharePanel />
 
         <View style={styles.divider} />
 
@@ -469,5 +569,120 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     fontStyle: 'italic',
+  },
+});
+
+const sp = StyleSheet.create({
+  container: {
+    marginHorizontal: 20,
+    marginTop: 18,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: DIVIDER,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  toggleLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: TEXT,
+    letterSpacing: 2,
+  },
+  toggleSub: {
+    marginTop: 4,
+    fontSize: 11,
+    color: MUTED,
+    fontStyle: 'italic',
+  },
+  pill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: MUTED,
+  },
+  pillOn: {
+    borderColor: GOLD,
+    backgroundColor: 'rgba(200,168,107,0.08)',
+  },
+  pillText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: MUTED,
+    letterSpacing: 2,
+  },
+  pillTextOn: {
+    color: GOLD,
+  },
+  expanded: {
+    borderTopWidth: 1,
+    borderTopColor: DIVIDER,
+    padding: 16,
+  },
+  fieldLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: MUTED,
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  nameInput: {
+    flex: 1,
+    height: 38,
+    borderWidth: 1,
+    borderColor: DIVIDER,
+    paddingHorizontal: 12,
+    color: TEXT,
+    fontSize: 13,
+    backgroundColor: '#0D0D0D',
+  },
+  saveBtn: {
+    paddingHorizontal: 14,
+    height: 38,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: GOLD,
+  },
+  saveBtnText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: GOLD,
+    letterSpacing: 2,
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: DIVIDER,
+    overflow: 'hidden',
+  },
+  linkText: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 11,
+    color: MUTED,
+  },
+  copyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderLeftWidth: 1,
+    borderLeftColor: DIVIDER,
+    backgroundColor: 'rgba(200,168,107,0.06)',
+  },
+  copyBtnText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: GOLD,
+    letterSpacing: 2,
   },
 });
