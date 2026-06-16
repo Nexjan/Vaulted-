@@ -19,24 +19,64 @@ import { SkeletonBlock } from '../components/Skeleton';
 const REDUCE_MOTION =
   Platform.OS === 'web' &&
   typeof window !== 'undefined' &&
-  (() => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
+  (() => {
+    try {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {
+      return false;
+    }
+  })();
 
-const BG    = '#0A0A0A';
-const TEXT  = '#F5F3EF';
-const GOLD  = '#C8A86B';
-const MUTED = '#555555';
+const BG      = '#0A0A0A';
+const TEXT    = '#F5F3EF';
+const GOLD    = '#C8A86B';
+const MUTED   = '#555555';
 const DIVIDER = '#1E1E1E';
 const SURFACE = '#141414';
+
+const { height: WIN_H, width: WIN_W } = Dimensions.get('window');
 
 const TOP_LISTINGS = sortByUniqueness(listings).slice(0, 4);
 const HERO_IMG     = TOP_LISTINGS[0]?.imageUrls?.[0] ?? '';
 const TOTAL_STAYS  = listings.length;
 
-// ─── tilt hook (web-only 3-D card effect) ────────────────────────────────────
+// CSS passthrough for web scroll-snap (RN Web forwards unknown style keys to the DOM)
+const WEB_SNAP_CONTAINER = Platform.OS === 'web' && !REDUCE_MOTION
+  ? ({ scrollSnapType: 'y mandatory' } as any)
+  : null;
+
+const WEB_SNAP_CHAPTER = Platform.OS === 'web' && !REDUCE_MOTION
+  ? ({ scrollSnapAlign: 'start' } as any)
+  : null;
+
+// ─── chapter reveal hook ─────────────────────────────────────────────────────
+// Fires when scrollVal reaches ~70 % of the way toward chapterIndex * WIN_H
+function useChapterReveal(chapterIndex: number, scrollVal: number) {
+  const threshold = chapterIndex * WIN_H * 0.7;
+  const anim  = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
+  const fired = useRef(REDUCE_MOTION);
+
+  useEffect(() => {
+    if (fired.current) return;
+    if (scrollVal >= threshold) {
+      fired.current = true;
+      Animated.timing(anim, {
+        toValue: 1, duration: 700,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [scrollVal]);
+
+  return anim;
+}
+
+// ─── 3-D tilt hook (web mouse-only) ─────────────────────────────────────────
 function useTilt() {
   const rotX = useRef(new Animated.Value(0)).current;
   const rotY = useRef(new Animated.Value(0)).current;
   const glow = useRef(new Animated.Value(0)).current;
+
   const rotXStr = rotX.interpolate({ inputRange: [-8, 8], outputRange: ['-8deg', '8deg'] });
   const rotYStr = rotY.interpolate({ inputRange: [-8, 8], outputRange: ['-8deg', '8deg'] });
 
@@ -62,72 +102,59 @@ function useTilt() {
   };
 
   const webHandlers = !REDUCE_MOTION && Platform.OS === 'web'
-    ? { onMouseMove, onMouseLeave } : {};
-  const tiltStyle = REDUCE_MOTION ? {} : ({
-    transform: [{ perspective: 900 }, { rotateX: rotXStr }, { rotateY: rotYStr }],
-  } as any);
+    ? { onMouseMove, onMouseLeave }
+    : {};
+
+  const tiltStyle = REDUCE_MOTION
+    ? {}
+    : ({ transform: [{ perspective: 900 }, { rotateX: rotXStr }, { rotateY: rotYStr }] } as any);
 
   return { webHandlers, tiltStyle, glow };
 }
 
-// ─── scroll-reveal hook ───────────────────────────────────────────────────
-function useReveal(sectionY: number, scrollVal: number) {
-  const anim  = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
-  const fired = useRef(REDUCE_MOTION);
-  const winH  = Dimensions.get('window').height;
-
-  useEffect(() => {
-    if (fired.current || sectionY === 0) return;
-    if (scrollVal + winH > sectionY + 80) {
-      fired.current = true;
-      Animated.timing(anim, {
-        toValue: 1, duration: 700,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [scrollVal, sectionY]);
-
-  return anim;
-}
-
-// ─── root ─────────────────────────────────────────────────────────────────────────
+// ─── root ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
-  const router = useRouter();
+  const router    = useRouter();
   const [scrollVal, setScrollVal] = useState(0);
+  const enterApp  = useCallback(() => router.push('/search'), [router]);
 
-  const enterApp = useCallback(() => router.push('/search'), [router]);
+  // On web: prevent document body from double-scrolling
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
 
   return (
     <ScrollView
-      style={styles.root}
+      style={[styles.root, WEB_SNAP_CONTAINER]}
       contentContainerStyle={styles.rootContent}
       showsVerticalScrollIndicator={false}
       scrollEventThrottle={16}
       onScroll={(e) => setScrollVal(e.nativeEvent.contentOffset.y)}
     >
-      <HeroSection onEnter={enterApp} />
-      <StorySection scrollVal={scrollVal} />
-      <CollectionSection scrollVal={scrollVal} onEnter={enterApp} />
-      <ClosingSection scrollVal={scrollVal} onEnter={enterApp} />
+      <HeroChapter onEnter={enterApp} />
+      <PhilosophyChapter scrollVal={scrollVal} />
+      <CollectionChapter scrollVal={scrollVal} onEnter={enterApp} />
+      <ClosingChapter scrollVal={scrollVal} onEnter={enterApp} />
     </ScrollView>
   );
 }
 
-// ─── HERO ───────────────────────────────────────────────────────────────────────────
-function HeroSection({ onEnter }: { onEnter: () => void }) {
-  const H     = useRef(Dimensions.get('window').height).current;
-  const W     = useRef(Dimensions.get('window').width).current;
-  const halfW = W / 2;
+// ─── CHAPTER 1 — HERO ────────────────────────────────────────────────────────
+function HeroChapter({ onEnter }: { onEnter: () => void }) {
+  const H     = WIN_H;
+  const halfW = WIN_W / 2;
 
-  const seamAlpha      = useRef(new Animated.Value(0)).current;
-  const seamGlowAlpha  = useRef(new Animated.Value(0)).current;
-  const leftX          = useRef(new Animated.Value(0)).current;
-  const rightX         = useRef(new Animated.Value(0)).current;
-  const contentAlpha   = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
-  const contentY       = useRef(new Animated.Value(REDUCE_MOTION ? 0 : 28)).current;
-  const imgAlpha       = useRef(new Animated.Value(0)).current;
-  const hintAlpha      = useRef(new Animated.Value(REDUCE_MOTION ? 0.45 : 0)).current;
+  const seamAlpha     = useRef(new Animated.Value(0)).current;
+  const seamGlowAlpha = useRef(new Animated.Value(0)).current;
+  const leftX         = useRef(new Animated.Value(0)).current;
+  const rightX        = useRef(new Animated.Value(0)).current;
+  const contentAlpha  = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
+  const contentY      = useRef(new Animated.Value(REDUCE_MOTION ? 0 : 28)).current;
+  const imgAlpha      = useRef(new Animated.Value(0)).current;
+  const hintAlpha     = useRef(new Animated.Value(REDUCE_MOTION ? 0.45 : 0)).current;
 
   useEffect(() => {
     if (REDUCE_MOTION) return;
@@ -140,10 +167,10 @@ function HeroSection({ onEnter }: { onEnter: () => void }) {
       Animated.timing(seamGlowAlpha, { toValue: 1, duration: 200, easing: E,  useNativeDriver: true }),
       Animated.delay(180),
       Animated.parallel([
-        Animated.timing(leftX,          { toValue: -(halfW + 8), duration: 720, easing: EO, useNativeDriver: true }),
-        Animated.timing(rightX,         { toValue:   halfW + 8,  duration: 720, easing: EO, useNativeDriver: true }),
-        Animated.timing(seamGlowAlpha,  { toValue: 0, duration: 220, useNativeDriver: true }),
-        Animated.timing(seamAlpha,      { toValue: 0, duration: 300, useNativeDriver: true }),
+        Animated.timing(leftX,         { toValue: -(halfW + 8), duration: 720, easing: EO, useNativeDriver: true }),
+        Animated.timing(rightX,        { toValue:   halfW + 8,  duration: 720, easing: EO, useNativeDriver: true }),
+        Animated.timing(seamGlowAlpha, { toValue: 0, duration: 220, useNativeDriver: true }),
+        Animated.timing(seamAlpha,     { toValue: 0, duration: 300, useNativeDriver: true }),
       ]),
       Animated.delay(60),
       Animated.parallel([
@@ -155,8 +182,7 @@ function HeroSection({ onEnter }: { onEnter: () => void }) {
   }, []);
 
   return (
-    <View style={[styles.hero, { height: H }]}>
-      {/* Listing image revealed behind the doors */}
+    <View style={[styles.chapter, { height: H, backgroundColor: BG }, WEB_SNAP_CHAPTER]}>
       <Animated.Image
         source={{ uri: HERO_IMG }}
         style={[StyleSheet.absoluteFill, { opacity: imgAlpha }]}
@@ -167,31 +193,41 @@ function HeroSection({ onEnter }: { onEnter: () => void }) {
       />
       <View style={styles.heroOverlay} />
 
-      {/* Left door */}
-      <Animated.View style={[styles.panel, styles.panelLeft, { width: halfW, transform: [{ translateX: leftX }] }]}>
+      {/* Left door panel */}
+      <Animated.View
+        style={[styles.panel, styles.panelLeft, { width: halfW, transform: [{ translateX: leftX }] }]}
+      >
         <View style={styles.panelOverlay} />
         <View style={styles.panelEdgeR} />
       </Animated.View>
 
-      {/* Right door */}
-      <Animated.View style={[styles.panel, styles.panelRight, { width: halfW, transform: [{ translateX: rightX }] }]}>
+      {/* Right door panel */}
+      <Animated.View
+        style={[styles.panel, styles.panelRight, { width: halfW, transform: [{ translateX: rightX }] }]}
+      >
         <View style={styles.panelOverlay} />
         <View style={styles.panelEdgeL} />
       </Animated.View>
 
-      {/* Gold seam */}
-      <Animated.View style={[styles.seam,     { left: halfW - 1, opacity: seamAlpha }]}     pointerEvents="none" />
-      <Animated.View style={[styles.seamGlow, { left: halfW - 14, opacity: seamGlowAlpha }]} pointerEvents="none" />
+      {/* Gold centre seam */}
+      <Animated.View
+        style={[styles.seam,     { left: halfW - 1,  opacity: seamAlpha }]}
+        pointerEvents="none"
+      />
+      <Animated.View
+        style={[styles.seamGlow, { left: halfW - 14, opacity: seamGlowAlpha }]}
+        pointerEvents="none"
+      />
 
-      {/* Hero content */}
+      {/* Hero copy */}
       <Animated.View
         style={[styles.heroContent, { opacity: contentAlpha, transform: [{ translateY: contentY }] }]}
         pointerEvents="box-none"
       >
         <Text style={styles.heroWordmark}>VAULTED</Text>
-        <View style={styles.heroLine} />
+        <View style={styles.heroGoldLine} />
         <Text style={styles.heroTagline}>Not every stay. Only the rare ones.</Text>
-        <EnterButton onPress={onEnter} style={styles.heroCtaGap} />
+        <EnterButton onPress={onEnter} style={{ marginTop: 40 }} />
       </Animated.View>
 
       {/* Scroll hint */}
@@ -203,59 +239,63 @@ function HeroSection({ onEnter }: { onEnter: () => void }) {
   );
 }
 
-// ─── STORY ──────────────────────────────────────────────────────────────────────────
-function StorySection({ scrollVal }: { scrollVal: number }) {
-  const [sectionY, setSectionY] = useState(0);
-  const reveal = useReveal(sectionY, scrollVal);
-  const ty = reveal.interpolate({ inputRange: [0, 1], outputRange: [40, 0] });
+// ─── CHAPTER 2 — PHILOSOPHY ───────────────────────────────────────────────────
+function PhilosophyChapter({ scrollVal }: { scrollVal: number }) {
+  const reveal = useChapterReveal(1, scrollVal);
+  const ty = reveal.interpolate({ inputRange: [0, 1], outputRange: [48, 0] });
 
   return (
-    <Animated.View
-      style={[styles.story, { opacity: reveal, transform: [{ translateY: ty }] }]}
-      onLayout={(e) => setSectionY(e.nativeEvent.layout.y)}
-    >
-      <Text style={styles.eyebrow}>THE STORY</Text>
+    <View style={[styles.chapter, { height: WIN_H, backgroundColor: BG }, WEB_SNAP_CHAPTER]}>
+      <Animated.View style={[styles.philoInner, { opacity: reveal, transform: [{ translateY: ty }] }]}>
+        <Text style={styles.eyebrow}>THE PHILOSOPHY</Text>
 
-      <Text style={styles.storyPull}>
-        Most travel sites show you everything.
-      </Text>
+        <Text style={styles.philoPull}>
+          Most travel sites{'\n'}show you everything.
+        </Text>
 
-      <View style={styles.storyDivider} />
+        <View style={styles.philoDivider} />
 
-      <Text style={styles.storyPull}>
-        We show you what’s worth finding — handpicked rare stays, scored by how unusual they are.
-      </Text>
+        <Text style={styles.philoCounter}>
+          We show you what's{'\n'}worth finding.
+        </Text>
 
-      <View style={styles.storyDivider} />
+        <View style={styles.philoDivider} />
 
-      <Text style={styles.storyBody}>
-        Every listing earns a rarity score. Lighthouses. Cave houses. Windmills.
-        Treehouses perched over nowhere. If it defies the ordinary, it belongs here.
-      </Text>
-    </Animated.View>
+        <Text style={styles.philoBody}>
+          Every listing earns a rarity score. Lighthouses.{'\n'}
+          Cave houses. Windmills. Treehouses perched over{'\n'}
+          nowhere. If it defies the ordinary, it belongs here.
+        </Text>
+      </Animated.View>
+    </View>
   );
 }
 
-// ─── COLLECTION ───────────────────────────────────────────────────────────────────
-function CollectionSection({ scrollVal, onEnter }: { scrollVal: number; onEnter: () => void }) {
-  const [sectionY, setSectionY] = useState(0);
-  const reveal = useReveal(sectionY, scrollVal);
-  const ty = reveal.interpolate({ inputRange: [0, 1], outputRange: [40, 0] });
+// ─── CHAPTER 3 — COLLECTION ───────────────────────────────────────────────────
+function CollectionChapter({
+  scrollVal,
+  onEnter,
+}: {
+  scrollVal: number;
+  onEnter: () => void;
+}) {
+  const reveal = useChapterReveal(2, scrollVal);
+  const ty     = reveal.interpolate({ inputRange: [0, 1], outputRange: [40, 0] });
   const router = useRouter();
-  const W = Dimensions.get('window').width;
-  const isWide = W > 700;
-  const cols = isWide ? 4 : 2;
-  const hPad = 20;
-  const gap = 10;
-  const cardW = (Math.min(W, 1280) - hPad * 2 - gap * (cols - 1)) / cols;
+
+  const isWide = WIN_W > 700;
+  const cols   = isWide ? 4 : 2;
+  const hPad   = 20;
+  const gap    = 10;
+  const maxW   = Math.min(WIN_W, 1280);
+  const cardW  = (maxW - hPad * 2 - gap * (cols - 1)) / cols;
 
   return (
-    <View style={styles.collOuter}>
+    <View style={[styles.chapter, { minHeight: WIN_H, backgroundColor: SURFACE }, WEB_SNAP_CHAPTER]}>
       <Animated.View
         style={[styles.collInner, { opacity: reveal, transform: [{ translateY: ty }] }]}
-        onLayout={(e) => setSectionY(e.nativeEvent.layout.y)}
       >
-        <Text style={[styles.eyebrow, styles.collEyebrow]}>FROM THE COLLECTION</Text>
+        <Text style={[styles.eyebrow, { marginBottom: 28 }]}>FROM THE COLLECTION</Text>
         <View style={styles.collGrid}>
           {TOP_LISTINGS.map((listing) => (
             <CollectionCard
@@ -285,13 +325,12 @@ function CollectionCard({
 }) {
   const { webHandlers, tiltStyle, glow } = useTilt();
   const uniqueness = getUniqueness(listing);
-  const imgAlpha = useRef(new Animated.Value(0)).current;
+  const imgAlpha   = useRef(new Animated.Value(0)).current;
 
   return (
     <Pressable style={{ width }} onPress={onPress} {...(webHandlers as any)}>
       {({ pressed }) => (
         <Animated.View style={[styles.card, tiltStyle, pressed && styles.cardPressed]}>
-          {/* Image */}
           <View style={styles.cardImg}>
             <SkeletonBlock style={StyleSheet.absoluteFill} />
             <Animated.Image
@@ -307,14 +346,12 @@ function CollectionCard({
               <Text style={styles.cardBadgeText}>◆ {uniqueness.score}</Text>
             </View>
           </View>
-          {/* Caption */}
           <View style={styles.cardCaption}>
             <Text style={styles.cardName} numberOfLines={1}>{listing.name}</Text>
             <Text style={styles.cardMeta} numberOfLines={1}>
               {listing.city.toUpperCase()} · {listing.propertyType.toUpperCase()}
             </Text>
           </View>
-          {/* Tilt glow border */}
           <Animated.View style={[styles.cardGlow, { opacity: glow }]} pointerEvents="none" />
         </Animated.View>
       )}
@@ -322,32 +359,44 @@ function CollectionCard({
   );
 }
 
-// ─── CLOSING ─────────────────────────────────────────────────────────────────────────
-function ClosingSection({ scrollVal, onEnter }: { scrollVal: number; onEnter: () => void }) {
-  const [sectionY, setSectionY] = useState(0);
-  const reveal = useReveal(sectionY, scrollVal);
-  const ty = reveal.interpolate({ inputRange: [0, 1], outputRange: [30, 0] });
+// ─── CHAPTER 4 — CLOSING / ENTRY ──────────────────────────────────────────────
+function ClosingChapter({
+  scrollVal,
+  onEnter,
+}: {
+  scrollVal: number;
+  onEnter: () => void;
+}) {
+  const reveal = useChapterReveal(3, scrollVal);
+  const ty     = reveal.interpolate({ inputRange: [0, 1], outputRange: [30, 0] });
 
   return (
-    <Animated.View
-      style={[styles.closing, { opacity: reveal, transform: [{ translateY: ty }] }]}
-      onLayout={(e) => setSectionY(e.nativeEvent.layout.y)}
+    <View
+      style={[
+        styles.chapter,
+        { height: WIN_H, backgroundColor: BG, borderTopWidth: 1, borderTopColor: DIVIDER },
+        WEB_SNAP_CHAPTER,
+      ]}
     >
-      <Text style={styles.closingWordmark}>VAULTED</Text>
-      <EnterButton onPress={onEnter} />
-      <Text style={styles.closingTrust}>A curated collection · {TOTAL_STAYS} rare stays</Text>
-      <View style={styles.legalRow}>
-        <Pressable hitSlop={8}><Text style={styles.legalLink}>Privacy Policy</Text></Pressable>
-        <Text style={styles.legalDot}>·</Text>
-        <Pressable hitSlop={8}><Text style={styles.legalLink}>Terms</Text></Pressable>
-        <Text style={styles.legalDot}>·</Text>
-        <Pressable hitSlop={8}><Text style={styles.legalLink}>Cookie Policy</Text></Pressable>
-      </View>
-    </Animated.View>
+      <Animated.View style={[styles.closingInner, { opacity: reveal, transform: [{ translateY: ty }] }]}>
+        <Text style={styles.closingWordmark}>VAULTED</Text>
+        <View style={styles.closingGoldLine} />
+        <Text style={styles.closingTagline}>Not every stay. Only the rare ones.</Text>
+        <EnterButton onPress={onEnter} style={{ marginTop: 44 }} />
+        <Text style={styles.closingTrust}>A curated collection · {TOTAL_STAYS} rare stays</Text>
+        <View style={styles.legalRow}>
+          <Pressable hitSlop={8}><Text style={styles.legalLink}>Privacy Policy</Text></Pressable>
+          <Text style={styles.legalDot}>·</Text>
+          <Pressable hitSlop={8}><Text style={styles.legalLink}>Terms</Text></Pressable>
+          <Text style={styles.legalDot}>·</Text>
+          <Pressable hitSlop={8}><Text style={styles.legalLink}>Cookie Policy</Text></Pressable>
+        </View>
+      </Animated.View>
+    </View>
   );
 }
 
-// ─── shared CTA button ────────────────────────────────────────────────────────────────────
+// ─── shared CTA button ────────────────────────────────────────────────────────
 function EnterButton({ onPress, style }: { onPress: () => void; style?: object }) {
   return (
     <Pressable
@@ -359,29 +408,33 @@ function EnterButton({ onPress, style }: { onPress: () => void; style?: object }
   );
 }
 
-// ─── styles ───────────────────────────────────────────────────────────────────────────
+// ─── styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root:        { flex: 1, backgroundColor: BG },
   rootContent: {},
 
-  // ── Hero ─────────────────────────────────────────────────────────────────────────
-  hero: { backgroundColor: BG, overflow: 'hidden' },
+  chapter: {
+    width: '100%',
+    overflow: 'hidden',
+  },
 
+  // ── Hero ──────────────────────────────────────────────────────────────────
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.50)',
   },
-
   panel: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
+    top: 0, bottom: 0,
     overflow: 'hidden',
     backgroundColor: '#0E0E0E',
   },
-  panelLeft:    { left: 0 },
-  panelRight:   { right: 0 },
-  panelOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.82)' },
+  panelLeft:  { left: 0 },
+  panelRight: { right: 0 },
+  panelOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.82)',
+  },
   panelEdgeR: {
     position: 'absolute',
     top: 0, right: 0, bottom: 0, width: 20,
@@ -392,21 +445,14 @@ const styles = StyleSheet.create({
     top: 0, left: 0, bottom: 0, width: 20,
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
-
   seam: {
-    position: 'absolute',
-    top: 0, bottom: 0,
-    width: 2,
-    backgroundColor: GOLD,
+    position: 'absolute', top: 0, bottom: 0,
+    width: 2, backgroundColor: GOLD,
   },
   seamGlow: {
-    position: 'absolute',
-    top: 0, bottom: 0,
-    width: 28,
-    backgroundColor: GOLD,
-    opacity: 0.18,
+    position: 'absolute', top: 0, bottom: 0,
+    width: 28, backgroundColor: GOLD, opacity: 0.18,
   },
-
   heroContent: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
@@ -421,12 +467,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     textAlign: 'center',
   },
-  heroLine: {
-    width: 44,
-    height: 1,
+  heroGoldLine: {
+    width: 44, height: 1,
     backgroundColor: GOLD,
-    marginTop: 20,
-    marginBottom: 18,
+    marginTop: 20, marginBottom: 18,
   },
   heroTagline: {
     fontSize: 18,
@@ -437,13 +481,9 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 28,
   },
-  heroCtaGap: { marginTop: 40 },
-
   scrollHint: {
     position: 'absolute',
-    bottom: 36,
-    left: 0,
-    right: 0,
+    bottom: 36, left: 0, right: 0,
     alignItems: 'center',
   },
   scrollHintText: {
@@ -454,12 +494,11 @@ const styles = StyleSheet.create({
   },
   scrollHintLine: {
     marginTop: 10,
-    width: 1,
-    height: 30,
+    width: 1, height: 30,
     backgroundColor: GOLD,
   },
 
-  // ── CTA button (shared) ─────────────────────────────────────────────────────────
+  // ── CTA button (shared) ───────────────────────────────────────────────────
   cta: {
     paddingHorizontal: 36,
     paddingVertical: 16,
@@ -474,11 +513,12 @@ const styles = StyleSheet.create({
     letterSpacing: 2.5,
   },
 
-  // ── Story ───────────────────────────────────────────────────────────────────────
-  story: {
-    paddingHorizontal: 32,
-    paddingVertical: 88,
-    maxWidth: 740,
+  // ── Philosophy ────────────────────────────────────────────────────────────
+  philoInner: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    maxWidth: 760,
     alignSelf: 'center',
     width: '100%',
   },
@@ -489,31 +529,37 @@ const styles = StyleSheet.create({
     letterSpacing: 3.5,
     marginBottom: 40,
   },
-  storyPull: {
-    fontSize: 26,
+  philoPull: {
+    fontSize: 42,
     fontWeight: '700',
     color: TEXT,
-    lineHeight: 36,
+    lineHeight: 52,
     fontFamily: 'Georgia',
-    letterSpacing: -0.4,
+    letterSpacing: -1,
   },
-  storyDivider: {
+  philoDivider: {
     height: 1,
-    width: 56,
+    width: 52,
     backgroundColor: GOLD,
     opacity: 0.4,
-    marginVertical: 28,
+    marginVertical: 32,
   },
-  storyBody: {
+  philoCounter: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: 'rgba(245,243,239,0.82)',
+    lineHeight: 42,
+    fontFamily: 'Georgia',
+    letterSpacing: -0.5,
+  },
+  philoBody: {
     fontSize: 15,
     color: MUTED,
-    lineHeight: 25,
+    lineHeight: 26,
     letterSpacing: 0.2,
-    marginTop: 4,
   },
 
-  // ── Collection ────────────────────────────────────────────────────────────────
-  collOuter: { backgroundColor: SURFACE },
+  // ── Collection ────────────────────────────────────────────────────────────
   collInner: {
     paddingVertical: 64,
     paddingHorizontal: 20,
@@ -521,7 +567,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
   },
-  collEyebrow: { marginBottom: 28 },
   collGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -543,11 +588,9 @@ const styles = StyleSheet.create({
   },
   cardBadge: {
     position: 'absolute',
-    bottom: 10,
-    left: 10,
+    bottom: 10, left: 10,
     backgroundColor: 'rgba(10,10,10,0.78)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 8, paddingVertical: 4,
   },
   cardBadgeText: {
     fontSize: 10,
@@ -578,7 +621,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(200,168,107,0.85)',
   },
-
   collLink: {
     marginTop: 28,
     alignSelf: 'flex-start',
@@ -591,22 +633,32 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 
-  // ── Closing ────────────────────────────────────────────────────────────────────
-  closing: {
-    paddingVertical: 80,
-    paddingHorizontal: 32,
+  // ── Closing ───────────────────────────────────────────────────────────────
+  closingInner: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: DIVIDER,
-    backgroundColor: BG,
+    paddingHorizontal: 32,
   },
   closingWordmark: {
-    fontSize: 38,
+    fontSize: 58,
     fontWeight: '900',
     color: TEXT,
     fontFamily: 'Georgia',
-    letterSpacing: -1,
-    marginBottom: 28,
+    letterSpacing: -2,
+  },
+  closingGoldLine: {
+    width: 44, height: 1,
+    backgroundColor: GOLD,
+    marginTop: 22, marginBottom: 22,
+  },
+  closingTagline: {
+    fontSize: 17,
+    color: 'rgba(245,243,239,0.68)',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    letterSpacing: 0.2,
+    lineHeight: 26,
   },
   closingTrust: {
     marginTop: 24,
