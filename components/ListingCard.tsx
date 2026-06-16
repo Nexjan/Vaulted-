@@ -57,19 +57,19 @@ export function ListingCard({ listing, badge, footnote }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: '#141414',
+    borderRadius: 2,
     overflow: 'hidden',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: 'rgba(200,168,107,0.14)',
   },
   cardPressed: {
     opacity: 0.85,
   },
   thumbnail: {
     height: 160,
-    backgroundColor: '#f3f1ee',
+    backgroundColor: '#141414',
   },
   image: {
     width: '100%',
@@ -91,17 +91,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#222',
+    color: '#F5F3EF',
   },
   location: {
     marginTop: 2,
     fontSize: 13,
-    color: '#717171',
+    color: '#555555',
   },
   footnote: {
     marginTop: 4,
     fontSize: 12,
-    color: '#9a6700',
+    color: '#C8A86B',
   },
   metaRow: {
     marginTop: 10,
@@ -111,16 +111,16 @@ const styles = StyleSheet.create({
   },
   rating: {
     fontSize: 13,
-    color: '#222',
+    color: '#F5F3EF',
   },
   price: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#222',
+    color: '#F5F3EF',
   },
   priceUnit: {
     fontSize: 12,
     fontWeight: '400',
-    color: '#717171',
+    color: '#555555',
   },
 });

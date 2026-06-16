@@ -36,7 +36,7 @@ export default function RareFindsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#faf9f7',
+    backgroundColor: '#0A0A0A',
   },
   header: {
     paddingHorizontal: 16,
@@ -45,12 +45,12 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#222',
+    color: '#F5F3EF',
   },
   subheading: {
     marginTop: 4,
     fontSize: 14,
-    color: '#717171',
+    color: '#555555',
     lineHeight: 20,
   },
   listContent: {
