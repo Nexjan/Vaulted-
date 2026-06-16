@@ -54,7 +54,15 @@ export function useSharedVault() {
       setSaving(true);
       setError(null);
       try {
-        if (vault) {
+        // Always re-fetch to avoid stale state (e.g. row exists but vault state is null)
+        const { data: current, error: fetchErr } = await supabase
+          .from('shared_vaults')
+          .select('id, slug, display_name, is_public')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (fetchErr) console.error('[sharedVault] pre-save fetch:', fetchErr.message);
+
+        if (current) {
           const patch: Record<string, unknown> = {
             is_public: isPublic,
             updated_at: new Date().toISOString(),
@@ -63,7 +71,7 @@ export function useSharedVault() {
           const { data, error: updateErr } = await supabase
             .from('shared_vaults')
             .update(patch)
-            .eq('id', vault.id)
+            .eq('id', current.id)
             .select('id, slug, display_name, is_public')
             .single();
           if (updateErr) {
@@ -99,7 +107,7 @@ export function useSharedVault() {
         setSaving(false);
       }
     },
-    [user?.id, vault],
+    [user?.id],
   );
 
   return { vault, loading, saving, error, setPublic, refresh };
