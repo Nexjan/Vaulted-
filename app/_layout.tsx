@@ -10,6 +10,8 @@ import { OnboardingProvider, useOnboarding, isOnboardingSessionDone } from '../l
 import { OnboardingModal } from '../components/OnboardingModal';
 import { PriceAlertsProvider } from '../lib/priceAlerts';
 import { AuthProvider } from '../lib/auth';
+import { VaultSealProvider } from '../lib/vaultSeal';
+import { VaultSealOverlay } from '../components/VaultSealOverlay';
 import type { OnboardingPrefs } from '../lib/onboarding';
 
 function AppShell() {
@@ -43,6 +45,7 @@ function AppShell() {
       </Stack>
       <VaultEntry onDone={() => setVaultDone(true)} />
       {showOnboarding && <OnboardingModal onDone={handleOnboardingDone} />}
+      <VaultSealOverlay />
     </View>
   );
 }
@@ -51,17 +54,19 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <FavoritesProvider>
-          <UserReviewsProvider>
-            <VaultProvider>
-              <OnboardingProvider>
-                <PriceAlertsProvider>
-                  <AppShell />
-                </PriceAlertsProvider>
-              </OnboardingProvider>
-            </VaultProvider>
-          </UserReviewsProvider>
-        </FavoritesProvider>
+        <VaultSealProvider>
+          <FavoritesProvider>
+            <UserReviewsProvider>
+              <VaultProvider>
+                <OnboardingProvider>
+                  <PriceAlertsProvider>
+                    <AppShell />
+                  </PriceAlertsProvider>
+                </OnboardingProvider>
+              </VaultProvider>
+            </UserReviewsProvider>
+          </FavoritesProvider>
+        </VaultSealProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

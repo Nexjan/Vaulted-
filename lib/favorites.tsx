@@ -3,6 +3,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
 import { useAuth } from './auth';
+import { useVaultSeal } from './vaultSeal';
 
 const LOCAL_KEY = 'vaulted:favorite-listing-ids';
 
@@ -25,13 +26,14 @@ const FavoritesContext = createContext<FavoritesContextValue | null>(null);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { triggerSeal } = useVaultSeal();
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Track which user we've synced so we don't re-fetch on every render cycle
   const syncedUserId = useRef<string | null>(null);
 
-  // ── 1. Load local AsyncStorage on mount ─────────────────────────────
+  // ── 1. Load local AsyncStorage on mount ───────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     AsyncStorage.getItem(LOCAL_KEY)
@@ -47,7 +49,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
-  // ── 2. Cloud sync once local is ready and a user is logged in ───────────
+  // ── 2. Cloud sync once local is ready and a user is logged in ─────────────
   useEffect(() => {
     if (!isLoaded) return;
     if (!user?.id) return;
@@ -86,15 +88,15 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     })();
   }, [user?.id, isLoaded]);
 
-  // ── 3. Reset sync marker when user logs out ─────────────────────────
+  // ── 3. Reset sync marker when user logs out ────────────────────────────────
   useEffect(() => {
     if (!user) syncedUserId.current = null;
   }, [user]);
 
-  // ── 4. Toggle: optimistic update + optional cloud write ───────────────
+  // ── 4. Toggle: optimistic update + optional cloud write ───────────────────
   const toggleFavorite = useCallback((id: string) => {
     const isAdding = !favoriteIds.includes(id);
-    if (isAdding) fireVaultHaptic();
+    if (isAdding) { fireVaultHaptic(); triggerSeal(); }
 
     setFavoriteIds((prev) => {
       const adding = !prev.includes(id);
