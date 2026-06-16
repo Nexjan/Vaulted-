@@ -31,7 +31,7 @@ export function ListingCard({ listing, badge, footnote }: Props) {
       <View style={styles.thumbnail}>
         <SkeletonBlock style={StyleSheet.absoluteFill} />
         <Animated.Image
-          source={{ uri: listing.imageUrl }}
+          source={{ uri: listing.imageUrls[0] }}
           style={[styles.image, { opacity: imgOpacity }]}
           resizeMode="cover"
           onLoad={() => {
@@ -43,7 +43,7 @@ export function ListingCard({ listing, badge, footnote }: Props) {
         {badge ? <Badge label={badge.label} tone={badge.tone} style={styles.badge} /> : null}
       </View>
       <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={1}>{listing.title}</Text>
+        <Text style={styles.title} numberOfLines={1}>{listing.name}</Text>
         <Text style={styles.location}>{listing.city}, {listing.country} · {listing.propertyType}</Text>
         {footnote ? <Text style={styles.footnote}>{footnote}</Text> : null}
         <View style={styles.metaRow}>

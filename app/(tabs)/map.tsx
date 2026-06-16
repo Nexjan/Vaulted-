@@ -3,7 +3,7 @@ import { Image, LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text, View
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { listings } from '../../data/listings';
+import { listings } from '../../lib/listingsService';
 import { CITY_COORDINATES, fitProjection } from '../../lib/geo';
 import { useFavorites } from '../../lib/favorites';
 import { getUniqueness } from '../../lib/uniqueness';
@@ -175,9 +175,9 @@ function MapListingRow({
         style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
       >
         <Text style={styles.rowNumber}>{num}</Text>
-        <Image source={{ uri: listing.imageUrl }} style={styles.rowImage} resizeMode="cover" />
+        <Image source={{ uri: listing.imageUrls[0] }} style={styles.rowImage} resizeMode="cover" />
         <View style={styles.rowBody}>
-          <Text style={styles.rowTitle} numberOfLines={2}>{listing.title}</Text>
+          <Text style={styles.rowTitle} numberOfLines={2}>{listing.name}</Text>
           <Text style={styles.rowLocation}>{listing.propertyType.toUpperCase()}</Text>
           <View style={styles.rowMeta}>
             <Text style={styles.rowRarity}>◆ {uniqueness.score}</Text>

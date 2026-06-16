@@ -3,7 +3,7 @@ import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } fro
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { listings } from '../../data/listings';
+import { listings } from '../../lib/listingsService';
 import { sortByBestDeal } from '../../lib/pricing';
 import { useFavorites } from '../../lib/favorites';
 import { SkeletonBlock } from '../../components/Skeleton';
@@ -15,8 +15,8 @@ const REDUCE_MOTION =
 
 interface DealItem {
   id: string;
-  imageUrl: string;
-  title: string;
+  imageUrls: string[];
+  name: string;
   city: string;
   propertyType: string;
   pricePerNight: number;
@@ -47,7 +47,7 @@ function DealRow({ item, index }: { item: DealItem; index: number }) {
         <View style={styles.rowImageWrap}>
           <SkeletonBlock style={StyleSheet.absoluteFill} />
           <Animated.Image
-            source={{ uri: item.imageUrl }}
+            source={{ uri: item.imageUrls[0] }}
             style={[StyleSheet.absoluteFill, { opacity: imgOpacity }]}
             resizeMode="cover"
             onLoad={() => {
@@ -57,7 +57,7 @@ function DealRow({ item, index }: { item: DealItem; index: number }) {
           />
         </View>
         <View style={styles.rowBody}>
-          <Text style={styles.rowTitle} numberOfLines={2}>{item.title}</Text>
+          <Text style={styles.rowTitle} numberOfLines={2}>{item.name}</Text>
           <Text style={styles.rowLocation}>
             {item.city.toUpperCase()} · {item.propertyType.toUpperCase()}
           </Text>

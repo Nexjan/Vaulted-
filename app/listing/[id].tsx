@@ -3,7 +3,7 @@ import { Animated, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, V
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { listings } from '../../data/listings';
+import { listings } from '../../lib/listingsService';
 import { PriceHistoryChart } from '../../components/PriceHistoryChart';
 import { ReviewsSection } from '../../components/ReviewsSection';
 import { getUniqueness } from '../../lib/uniqueness';
@@ -98,7 +98,7 @@ export default function ListingDetailScreen() {
         <View style={styles.hero}>
           <SkeletonBlock style={StyleSheet.absoluteFill} />
           <Animated.Image
-            source={{ uri: listing.imageUrl }}
+            source={{ uri: listing.imageUrls[0] }}
             style={[styles.heroImage, { opacity: heroOpacity }]}
             resizeMode="cover"
             onLoad={() => {
@@ -123,7 +123,7 @@ export default function ListingDetailScreen() {
 
         {/* ── Title & meta ── */}
         <View style={styles.titleBlock}>
-          <Text style={styles.title}>{listing.title}</Text>
+          <Text style={styles.title}>{listing.name}</Text>
           <View style={styles.metaRow}>
             <Text style={styles.metaItem}>★ {listing.rating.toFixed(2)}</Text>
             <Text style={styles.metaDot}>·</Text>
@@ -146,7 +146,7 @@ export default function ListingDetailScreen() {
             <Text key={reason} style={styles.bullet}>— {reason}</Text>
           ))}
           <View style={styles.tagRow}>
-            {listing.tags.map((tag) => (
+            {listing.amenities.map((tag) => (
               <View key={tag} style={styles.tag}>
                 <Text style={styles.tagText}>{tag.toUpperCase()}</Text>
               </View>

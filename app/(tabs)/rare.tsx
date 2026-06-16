@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { listings } from '../../data/listings';
+import { listings } from '../../lib/listingsService';
 import { ListingCard } from '../../components/ListingCard';
 import { sortByUniqueness } from '../../lib/uniqueness';
 

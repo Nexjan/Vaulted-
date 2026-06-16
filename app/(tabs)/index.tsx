@@ -6,7 +6,7 @@ import { useOnboarding } from '../../lib/onboarding';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { listings } from '../../data/listings';
+import { listings } from '../../lib/listingsService';
 import { Listing } from '../../lib/types';
 import { getUniqueness } from '../../lib/uniqueness';
 import { useFavorites } from '../../lib/favorites';
@@ -155,7 +155,7 @@ export default function SearchScreen() {
       if (selectedType && listing.propertyType !== selectedType) return false;
       if (minRarity !== null && getUniqueness(listing).score < minRarity) return false;
       if (q) {
-        const haystack = [listing.title, listing.city, listing.country, listing.propertyType, ...listing.tags]
+        const haystack = [listing.name, listing.city, listing.country, listing.propertyType, ...listing.amenities]
           .join(' ')
           .toLowerCase();
         if (!haystack.includes(q)) return false;
@@ -165,7 +165,7 @@ export default function SearchScreen() {
           const vibe = VIBES.find((v) => v.id === vibeId)!;
           return (
             vibe.types.includes(listing.propertyType) ||
-            listing.tags.some((tag) => vibe.tags.includes(tag))
+            listing.amenities.some((tag) => vibe.tags.includes(tag))
           );
         });
         if (!vibeMatch) return false;
@@ -442,7 +442,7 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
         <Animated.View style={[styles.hero, tiltStyle, pressed && styles.heroPressed]}>
           <SkeletonBlock style={StyleSheet.absoluteFill} />
           <Animated.Image
-            source={{ uri: listing.imageUrl }}
+            source={{ uri: listing.imageUrls[0] }}
             style={[styles.heroImage, { opacity: imgOpacity }]}
             resizeMode="cover"
             onLoad={() => {
@@ -454,7 +454,7 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
           <Text style={styles.heroNumber}>{num}</Text>
           <View style={styles.heroBottom}>
             <View style={styles.heroInfo}>
-              <Text style={styles.heroTitle} numberOfLines={2}>{listing.title}</Text>
+              <Text style={styles.heroTitle} numberOfLines={2}>{listing.name}</Text>
               <Text style={styles.heroLocation}>
                 {listing.city.toUpperCase()}, {listing.country.toUpperCase()} · {listing.propertyType.toUpperCase()}
               </Text>
@@ -506,7 +506,7 @@ function EditorialRow({ listing, number }: { listing: Listing; number: number })
           <View style={styles.rowImageWrap}>
             <SkeletonBlock style={StyleSheet.absoluteFill} />
             <Animated.Image
-              source={{ uri: listing.imageUrl }}
+              source={{ uri: listing.imageUrls[0] }}
               style={[StyleSheet.absoluteFill, { opacity: imgOpacity }]}
               resizeMode="cover"
               onLoad={() => {
@@ -516,7 +516,7 @@ function EditorialRow({ listing, number }: { listing: Listing; number: number })
             />
           </View>
           <View style={styles.rowBody}>
-            <Text style={styles.rowTitle} numberOfLines={2}>{listing.title}</Text>
+            <Text style={styles.rowTitle} numberOfLines={2}>{listing.name}</Text>
             <Text style={styles.rowLocation}>
               {listing.city.toUpperCase()} · {listing.propertyType.toUpperCase()}
             </Text>

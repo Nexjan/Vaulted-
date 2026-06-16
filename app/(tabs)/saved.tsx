@@ -3,7 +3,7 @@ import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } fro
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { listings } from '../../data/listings';
+import { listings } from '../../lib/listingsService';
 import { useFavorites } from '../../lib/favorites';
 import { getUniqueness } from '../../lib/uniqueness';
 import { Listing } from '../../lib/types';
@@ -98,7 +98,7 @@ function VaultCard({ listing, index, drop }: { listing: Listing; index: number; 
           <View style={styles.imageWrap}>
             <SkeletonBlock style={StyleSheet.absoluteFill} />
             <Animated.Image
-              source={{ uri: listing.imageUrl }}
+              source={{ uri: listing.imageUrls[0] }}
               style={[styles.cardImage, { opacity: imgOpacity }]}
               resizeMode="cover"
               onLoad={() => {
@@ -118,7 +118,7 @@ function VaultCard({ listing, index, drop }: { listing: Listing; index: number; 
 
           {/* Body */}
           <View style={styles.cardBody}>
-            <Text style={styles.cardTitle} numberOfLines={1}>{listing.title}</Text>
+            <Text style={styles.cardTitle} numberOfLines={1}>{listing.name}</Text>
             <Text style={styles.cardLocation}>
               {listing.city.toUpperCase()} · {listing.propertyType.toUpperCase()}
             </Text>
