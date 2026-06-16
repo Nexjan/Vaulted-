@@ -15,8 +15,9 @@ export default function TabsLayout() {
         },
       }}
     >
+      <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen
-        name="index"
+        name="search"
         options={{
           title: 'Search',
           tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} />,
