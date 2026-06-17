@@ -433,6 +433,7 @@ function ClosingChapter({
   scrollVal: number;
   onEnter: () => void;
 }) {
+  const router   = useRouter();
   const reveal   = useChapterReveal(3, scrollVal);
   const ty       = reveal.interpolate({ inputRange: [0, 1], outputRange: [30, 0] });
   const imgAlpha = useRef(new Animated.Value(0)).current;
@@ -464,11 +465,11 @@ function ClosingChapter({
         <EnterButton onPress={onEnter} style={{ marginTop: 44 }} label="OPEN THE VAULT" />
         <Text style={styles.closingTrust}>A curated collection.</Text>
         <View style={styles.legalRow}>
-          <Pressable hitSlop={8}><Text style={styles.legalLink}>Privacy Policy</Text></Pressable>
+          <Pressable hitSlop={8} onPress={() => router.push('/privacy')}><Text style={styles.legalLink}>Privacy Policy</Text></Pressable>
           <Text style={styles.legalDot}>·</Text>
-          <Pressable hitSlop={8}><Text style={styles.legalLink}>Terms</Text></Pressable>
+          <Pressable hitSlop={8} onPress={() => router.push('/terms')}><Text style={styles.legalLink}>Terms</Text></Pressable>
           <Text style={styles.legalDot}>·</Text>
-          <Pressable hitSlop={8}><Text style={styles.legalLink}>Cookie Policy</Text></Pressable>
+          <Pressable hitSlop={8} onPress={() => router.push('/cookies')}><Text style={styles.legalLink}>Cookie Policy</Text></Pressable>
         </View>
       </Animated.View>
     </View>
