@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { PriceHistory } from '../lib/priceHistory';
+import { formatPrice } from '../lib/currency';
 
 const TRACK_HEIGHT = 96;
 const GOLD = '#C8A86B';
@@ -8,6 +9,8 @@ const TEXT = '#F5F3EF';
 
 interface Props {
   history: PriceHistory;
+  /** ISO 4217 currency code for price labels (e.g. "USD", "EUR"). Defaults to "USD". */
+  currency?: string;
 }
 
 const TREND_COPY: Record<PriceHistory['trend'], (percent: number) => string> = {
@@ -22,7 +25,7 @@ const TREND_STYLE: Record<PriceHistory['trend'], { icon: string; color: string }
   flat: { icon: '→', color: MUTED },
 };
 
-export function PriceHistoryChart({ history }: Props) {
+export function PriceHistoryChart({ history, currency = 'USD' }: Props) {
   const { points, trend, changePercent } = history;
   const prices = points.map((point) => point.price);
   const min = Math.min(...prices);
@@ -47,7 +50,7 @@ export function PriceHistoryChart({ history }: Props) {
 
           return (
             <View key={point.label} style={styles.column}>
-              <Text style={[styles.value, isLatest && styles.valueLatest]}>${point.price}</Text>
+              <Text style={[styles.value, isLatest && styles.valueLatest]}>{formatPrice(point.price, currency)}</Text>
               <View style={styles.track}>
                 <View style={[styles.bar, { height: barHeight }, isLatest && styles.barLatest]} />
               </View>

@@ -1,10 +1,15 @@
-// ─── BOOKING.COM INTEGRATION POINT ───────────────────────────────────────────
+// ─── BOOKING SOURCE INTEGRATION POINT ────────────────────────────────────────
 // This is the single source of listing data for the entire app.
-// To connect real Booking.com inventory:
-//   1. Replace the mock import below with a call to the Booking.com Affiliate API.
-//      Docs: https://developers.booking.com/affiliate/index.html
-//   2. Map each API property to the Listing interface in lib/types.ts.
-//   3. No screen, component, or lib file needs to change — only this module.
+// To connect real inventory from any provider:
+//   1. Replace (or supplement) the mock import below with calls to provider APIs:
+//        Booking.com: https://developers.booking.com/affiliate/index.html
+//        Vrbo / HomeAway: https://developer.vrbo.com
+//        Agoda: https://partners.agoda.com
+//   2. Normalize each API response to the Listing interface in lib/types.ts.
+//      Set listing.source = "booking.com" | "vrbo" | "agoda" etc. so listings
+//      can be traced back to their origin.
+//   3. No screen, component, or lib file needs to change — all filtering
+//      (search, saved, index, map) runs against this array regardless of source.
 // ─────────────────────────────────────────────────────────────────────────────
 import { listings as _mockListings } from '../data/listings';
 import type { Listing } from './types';
