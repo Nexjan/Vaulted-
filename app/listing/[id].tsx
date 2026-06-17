@@ -17,6 +17,7 @@ import { SkeletonBlock } from '../../components/Skeleton';
 import { getBookingUrl } from '../../lib/booking';
 import { Listing } from '../../lib/types';
 import { formatPrice } from '../../lib/currency';
+import { useCurrency } from '../../lib/currencyContext';
 
 const REDUCE_MOTION =
   Platform.OS === 'web' &&
@@ -30,8 +31,6 @@ const MUTED   = '#555555';
 const DIVIDER = '#1E1E1E';
 const SURFACE = '#141414';
 
-// ─── Amenity → icon lookup ──────────────────────────────────────────────────────
-// Substring-matched (case-insensitive) against each listing.amenities string.
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 const AMENITY_ICON_MAP: { search: string; icon: IoniconsName }[] = [
@@ -104,8 +103,7 @@ function getAmenityIcon(amenity: string): IoniconsName {
   return match?.icon ?? 'checkmark-circle-outline';
 }
 
-// ─── Gallery slide (each image in the horizontal gallery) ─────────────────
- function GallerySlide({ url, width, height }: { url: string; width: number; height: number }) {
+function GallerySlide({ url, width, height }: { url: string; width: number; height: number }) {
   const opacity = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
   return (
     <View style={{ width, height }}>
@@ -123,7 +121,6 @@ function getAmenityIcon(amenity: string): IoniconsName {
   );
 }
 
-// ─── Amenity grid ────────────────────────────────────────────────────────
 function AmenityGrid({ amenities }: { amenities: string[] }) {
   return (
     <View style={s.amenityGrid}>
@@ -137,7 +134,6 @@ function AmenityGrid({ amenities }: { amenities: string[] }) {
   );
 }
 
-// ─── Location section ───────────────────────────────────────────────────
 function LocationSection({ listing }: { listing: Listing }) {
   const openMaps = () => {
     const { latitude, longitude, city, country } = listing;
@@ -160,25 +156,18 @@ function LocationSection({ listing }: { listing: Listing }) {
   return (
     <View style={s.section}>
       <Text style={s.sectionLabel}>LOCATION</Text>
-
-      {/* Branded map pin box */}
       <View style={s.mapBox}>
-        {/* Subtle gold grid lines to suggest cartography */}
         <View style={[s.mapLine, s.mapLineH, { top: '25%' }]} />
         <View style={[s.mapLine, s.mapLineH, { top: '50%' }]} />
         <View style={[s.mapLine, s.mapLineH, { top: '75%' }]} />
         <View style={[s.mapLine, s.mapLineV, { left: '25%' }]} />
         <View style={[s.mapLine, s.mapLineV, { left: '50%' }]} />
         <View style={[s.mapLine, s.mapLineV, { left: '75%' }]} />
-        {/* Center glow */}
         <View style={s.mapGlow} />
-        {/* Gold location pin */}
         <View style={s.mapPinWrap}>
           <Ionicons name="location" size={38} color={GOLD} />
         </View>
       </View>
-
-      {/* Info row */}
       <View style={s.locationRow}>
         <View style={s.locationLeft}>
           <Text style={s.locationCity}>
@@ -198,9 +187,9 @@ function LocationSection({ listing }: { listing: Listing }) {
   );
 }
 
-// ─── Reserve bar (sticky) ─────────────────────────────────────────────────
 function ReserveBar({ listing }: { listing: Listing }) {
   const insets = useSafeAreaInsets();
+  const { displayCurrency } = useCurrency();
   const sheenX = useRef(new Animated.Value(-200)).current;
 
   const runSheen = () => {
@@ -212,19 +201,13 @@ function ReserveBar({ listing }: { listing: Listing }) {
   const webProps = Platform.OS === 'web' ? { onMouseEnter: runSheen } as Record<string, unknown> : {};
 
   const handleReserve = () => {
-    // ─── AFFILIATE BOOKING URL ────────────────────────────────────────────
-    // getBookingUrl() is the single authoritative source for outbound booking links.
-    // Once Travelpayouts / Booking.com / Vrbo / Agoda partner approvals land,
-    // update lib/booking.ts with the affiliate ID — no other file needs to change.
-    // The affiliate-tagged URL replaces listing.bookingUrl for real inventory.
-    // ──────────────────────────────────────────────────────────────────────────
     Linking.openURL(getBookingUrl(listing));
   };
 
   return (
     <View style={[s.reserveBar, { paddingBottom: insets.bottom + 14 }]}>
       <View style={s.reservePriceGroup}>
-        <Text style={s.reservePrice}>{formatPrice(listing.pricePerNight, listing.currency)}</Text>
+        <Text style={s.reservePrice}>{formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}</Text>
         <Text style={s.reservePriceUnit}>/ night</Text>
       </View>
       <Pressable
@@ -242,13 +225,13 @@ function ReserveBar({ listing }: { listing: Listing }) {
   );
 }
 
-// ─── Main screen ────────────────────────────────────────────────────────────────
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { displayCurrency } = useCurrency();
   const [activePhoto, setActivePhoto] = useState(0);
 
   const listing = useMemo(() => listings.find((item) => item.id === id), [id]);
@@ -272,7 +255,7 @@ export default function ListingDetailScreen() {
   const HERO_H         = Math.min(Math.round(width * 0.72), 460);
 
   const dealTier       = priceComparison.tier;
-  const avgFormatted   = formatPrice(Math.round(priceComparison.comparableAverage), listing.currency);
+  const avgFormatted   = formatPrice(Math.round(priceComparison.comparableAverage), listing.currency, displayCurrency);
   const dealCopy =
     priceComparison.comparableCount === 0
       ? 'Insufficient comparable stays in this city to benchmark the price.'
@@ -286,7 +269,6 @@ export default function ListingDetailScreen() {
     <View style={s.screen}>
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-        {/* ── Photo gallery ── */}
         <View style={[s.galleryWrap, { height: HERO_H }]}>
           <ScrollView
             horizontal
@@ -301,11 +283,7 @@ export default function ListingDetailScreen() {
               <GallerySlide key={i} url={url} width={width} height={HERO_H} />
             ))}
           </ScrollView>
-
-          {/* Bottom overlay for legibility */}
           <View style={s.heroGradient} pointerEvents="none" />
-
-          {/* Back arrow */}
           <Pressable
             onPress={() => router.back()}
             hitSlop={8}
@@ -313,8 +291,6 @@ export default function ListingDetailScreen() {
           >
             <Ionicons name="chevron-back" size={16} color={TEXT} />
           </Pressable>
-
-          {/* Save / heart */}
           <Pressable
             onPress={() => toggleFavorite(listing.id)}
             hitSlop={8}
@@ -326,8 +302,6 @@ export default function ListingDetailScreen() {
               color={active ? GOLD : TEXT}
             />
           </Pressable>
-
-          {/* Gold dot indicators */}
           {listing.imageUrls.length > 1 && (
             <View style={s.dotsRow} pointerEvents="none">
               {listing.imageUrls.map((_, i) => (
@@ -337,7 +311,6 @@ export default function ListingDetailScreen() {
           )}
         </View>
 
-        {/* ── Title & location line ── */}
         <View style={s.titleBlock}>
           <Text style={s.title}>{listing.name}</Text>
           <Text style={s.locationLine}>
@@ -345,7 +318,6 @@ export default function ListingDetailScreen() {
           </Text>
         </View>
 
-        {/* ── Stats row ── */}
         <View style={s.statsRow}>
           <View style={s.statGroup}>
             <Text style={s.statRarity}>◆ {uniqueness.score}<Text style={s.statRarityMuted}>/100</Text></Text>
@@ -358,14 +330,13 @@ export default function ListingDetailScreen() {
           </View>
           <View style={s.statDivider} />
           <View style={s.statGroup}>
-            <Text style={s.statPrice}>{formatPrice(listing.pricePerNight, listing.currency)}</Text>
+            <Text style={s.statPrice}>{formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}</Text>
             <Text style={s.statLabel}>PER NIGHT</Text>
           </View>
         </View>
 
         <View style={s.divider} />
 
-        {/* ── Description ── */}
         {!!listing.description && (
           <>
             <View style={s.section}>
@@ -376,7 +347,6 @@ export default function ListingDetailScreen() {
           </>
         )}
 
-        {/* ── Amenities ── */}
         {listing.amenities.length > 0 && (
           <>
             <View style={s.section}>
@@ -387,11 +357,9 @@ export default function ListingDetailScreen() {
           </>
         )}
 
-        {/* ── Location ── */}
         <LocationSection listing={listing} />
         <View style={s.divider} />
 
-        {/* ── What makes it rare ── */}
         {uniqueness.reasons.length > 0 && (
           <>
             <View style={s.section}>
@@ -408,11 +376,10 @@ export default function ListingDetailScreen() {
           </>
         )}
 
-        {/* ── Price check ── */}
         <View style={s.section}>
           <Text style={s.sectionLabel}>PRICE CHECK</Text>
           <View style={s.priceCheckRow}>
-            <Text style={s.priceCheckValue}>{formatPrice(listing.pricePerNight, listing.currency)}</Text>
+            <Text style={s.priceCheckValue}>{formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}</Text>
             <Text style={s.priceCheckUnit}>/ night</Text>
             {dealTier === 'great-deal' && (
               <View style={s.dealBadge}>
@@ -425,7 +392,6 @@ export default function ListingDetailScreen() {
 
         <View style={s.divider} />
 
-        {/* ── Price history ── */}
         <View style={s.section}>
           <Text style={s.sectionLabel}>PRICE HISTORY</Text>
           <PriceHistoryChart history={priceHistory} currency={listing.currency} />
@@ -433,92 +399,60 @@ export default function ListingDetailScreen() {
 
         <View style={s.divider} />
 
-        {/* ── Reviews ── */}
         <View style={s.section}>
           <ReviewsSection listing={listing} />
         </View>
 
       </ScrollView>
 
-      {/* ── Sticky reserve bar ── */}
       <ReserveBar listing={listing} />
     </View>
   );
 }
 
-// ─── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   screen:   { flex: 1, backgroundColor: BG },
   content:  { paddingBottom: 112 },
 
-  // Not found
   notFound: { flex: 1, backgroundColor: BG, alignItems: 'center', justifyContent: 'center', padding: 24 },
   notFoundBack: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 24 },
   notFoundBackText: { fontSize: 9, fontWeight: '700', color: GOLD, letterSpacing: 2 },
   notFoundText: { fontSize: 10, fontWeight: '700', color: MUTED, letterSpacing: 2.5 },
 
-  // Gallery
   galleryWrap: { backgroundColor: SURFACE },
   heroGradient: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    height: 56,
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: 56,
     backgroundColor: 'rgba(0,0,0,0.28)',
   },
   backBtn: {
-    position: 'absolute',
-    left: 16,
-    width: 36, height: 36,
-    borderRadius: 18,
+    position: 'absolute', left: 16,
+    width: 36, height: 36, borderRadius: 18,
     backgroundColor: 'rgba(10,10,10,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   heartBtn: {
-    position: 'absolute',
-    right: 16,
-    width: 36, height: 36,
-    borderRadius: 18,
+    position: 'absolute', right: 16,
+    width: 36, height: 36, borderRadius: 18,
     backgroundColor: 'rgba(10,10,10,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   dotsRow: {
-    position: 'absolute',
-    bottom: 14,
-    left: 0, right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
+    position: 'absolute', bottom: 14, left: 0, right: 0,
+    flexDirection: 'row', justifyContent: 'center', gap: 6,
   },
-  dot: {
-    width: 5, height: 5,
-    borderRadius: 3,
-    backgroundColor: 'rgba(245,243,239,0.35)',
-  },
-  dotActive: {
-    backgroundColor: GOLD,
-    width: 14,
-  },
+  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(245,243,239,0.35)' },
+  dotActive: { backgroundColor: GOLD, width: 14 },
 
-  // Title block
   titleBlock: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 4 },
   title: {
     fontSize: 30, fontWeight: '800', color: TEXT,
-    fontFamily: 'Georgia', lineHeight: 36, letterSpacing: -0.5,
-    marginBottom: 10,
+    fontFamily: 'Georgia', lineHeight: 36, letterSpacing: -0.5, marginBottom: 10,
   },
-  locationLine: {
-    fontSize: 9, fontWeight: '700', color: GOLD, letterSpacing: 2.5,
-  },
+  locationLine: { fontSize: 9, fontWeight: '700', color: GOLD, letterSpacing: 2.5 },
 
-  // Stats row
   statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    gap: 0,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 20, paddingVertical: 20, gap: 0,
   },
   statGroup: { flex: 1, alignItems: 'center' },
   statDivider: { width: 1, height: 32, backgroundColor: DIVIDER },
@@ -536,78 +470,47 @@ const s = StyleSheet.create({
 
   divider: { height: 1, backgroundColor: DIVIDER },
 
-  // Sections
   section: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 22 },
   sectionLabel: { fontSize: 9, fontWeight: '700', color: GOLD, letterSpacing: 2.5, marginBottom: 16 },
 
-  // Body text
   body: { fontSize: 14, lineHeight: 23, color: '#AAAAAA' },
 
-  // Amenities
   amenityGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 4 },
   amenityItem: {
-    width: '50%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 9,
-    paddingRight: 12,
+    width: '50%', flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 9, paddingRight: 12,
   },
   amenityIcon: { marginRight: 10 },
   amenityText: { fontSize: 13, color: '#CCCCCC', flex: 1 },
 
-  // Location map box
   mapBox: {
-    height: 156,
-    backgroundColor: '#0C0C0C',
-    borderWidth: 1,
-    borderColor: DIVIDER,
-    marginBottom: 16,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
+    height: 156, backgroundColor: '#0C0C0C',
+    borderWidth: 1, borderColor: DIVIDER,
+    marginBottom: 16, overflow: 'hidden',
+    alignItems: 'center', justifyContent: 'center',
   },
-  mapLine: {
-    position: 'absolute',
-    backgroundColor: 'rgba(200,168,107,0.07)',
-  },
+  mapLine: { position: 'absolute', backgroundColor: 'rgba(200,168,107,0.07)' },
   mapLineH: { left: 0, right: 0, height: 1 },
   mapLineV: { top: 0, bottom: 0, width: 1 },
   mapGlow: {
-    position: 'absolute',
-    width: 72, height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(200,168,107,0.07)',
+    position: 'absolute', width: 72, height: 72,
+    borderRadius: 36, backgroundColor: 'rgba(200,168,107,0.07)',
   },
   mapPinWrap: { marginBottom: -8 },
 
-  // Location info below map
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-  },
+  locationRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   locationLeft: { flex: 1 },
   locationCity: { fontSize: 16, fontWeight: '700', color: TEXT, marginBottom: 4 },
   locationCountry: { fontSize: 12, color: MUTED, marginBottom: 6 },
   locationCoords: { fontSize: 10, color: '#444444', letterSpacing: 0.5, fontVariant: ['tabular-nums'] },
   openMapsBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(200,168,107,0.3)',
-    marginLeft: 16,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingVertical: 8, paddingHorizontal: 12,
+    borderWidth: 1, borderColor: 'rgba(200,168,107,0.3)', marginLeft: 16,
   },
   openMapsBtnText: { fontSize: 9, fontWeight: '700', color: GOLD, letterSpacing: 2 },
 
-  // Rarity section
-  rarityScoreRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 14,
-  },
+  rarityScoreRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 14 },
   rarityScore: {
     fontSize: 44, fontWeight: '900', color: GOLD,
     fontFamily: 'Georgia', letterSpacing: -1, lineHeight: 48,
@@ -615,64 +518,40 @@ const s = StyleSheet.create({
   rarityScoreOf: { fontSize: 20, fontWeight: '400', color: MUTED },
   rarityReason: { fontSize: 13, lineHeight: 22, color: '#888888' },
 
-  // Price check
-  priceCheckRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    marginBottom: 10,
-  },
+  priceCheckRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 10 },
   priceCheckValue: {
     fontSize: 32, fontWeight: '900', color: TEXT,
     fontFamily: 'Georgia', letterSpacing: -1,
   },
   priceCheckUnit: { fontSize: 13, color: MUTED },
   dealBadge: {
-    borderWidth: 1,
-    borderColor: 'rgba(200,168,107,0.5)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginLeft: 4,
-    alignSelf: 'flex-end',
-    marginBottom: 4,
+    borderWidth: 1, borderColor: 'rgba(200,168,107,0.5)',
+    paddingHorizontal: 8, paddingVertical: 4,
+    marginLeft: 4, alignSelf: 'flex-end', marginBottom: 4,
   },
   dealBadgeText: { fontSize: 8, fontWeight: '700', color: GOLD, letterSpacing: 1.5 },
   dealCopy: { fontSize: 13, lineHeight: 20, color: MUTED },
 
-  // Reserve bar
   reserveBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: DIVIDER,
-    backgroundColor: BG,
-    gap: 14,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 20, paddingTop: 14,
+    borderTopWidth: 1, borderTopColor: DIVIDER,
+    backgroundColor: BG, gap: 14,
   },
-  reservePriceGroup: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-  },
+  reservePriceGroup: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
   reservePrice: {
     fontSize: 20, fontWeight: '900', color: TEXT,
     fontFamily: 'Georgia', letterSpacing: -0.5,
   },
   reservePriceUnit: { fontSize: 11, color: MUTED },
   reserveBtn: {
-    flex: 1, height: 52,
-    backgroundColor: GOLD,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    flex: 1, height: 52, backgroundColor: GOLD,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
   reserveBtnPressed: { opacity: 0.82 },
   reserveBtnText: { fontSize: 11, fontWeight: '800', color: BG, letterSpacing: 2.5 },
   reserveSheen: {
-    position: 'absolute',
-    top: 0, bottom: 0,
-    width: 70,
+    position: 'absolute', top: 0, bottom: 0, width: 70,
     backgroundColor: 'rgba(255,255,255,0.18)',
   },
 });
