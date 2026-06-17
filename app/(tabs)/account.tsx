@@ -12,8 +12,6 @@ import { listings } from '../../lib/listingsService';
 import { supabase } from '../../lib/supabase';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
-// Update LEGAL_BASE to your real domain once legal pages exist
-const LEGAL_BASE = 'https://vaultedstays.com';
 
 const BG      = '#0A0A0A';
 const TEXT    = '#F5F3EF';
@@ -403,16 +401,16 @@ export default function AccountTab() {
         <View style={s.card}>
           <NavRow
             label="Privacy Policy"
-            onPress={() => Linking.openURL(`${LEGAL_BASE}/privacy`).catch(() => {})}
+            onPress={() => router.push('/privacy')}
           />
           <NavRow
             label="Terms of Service"
-            onPress={() => Linking.openURL(`${LEGAL_BASE}/terms`).catch(() => {})}
+            onPress={() => router.push('/terms')}
           />
           <NavRow
             label="Cookie Policy"
             last
-            onPress={() => Linking.openURL(`${LEGAL_BASE}/cookies`).catch(() => {})}
+            onPress={() => router.push('/cookies')}
           />
           <RowDivider />
           <View style={s.row}>
