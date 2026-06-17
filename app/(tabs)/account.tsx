@@ -12,8 +12,7 @@ import { listings } from '../../lib/listingsService';
 import { supabase } from '../../lib/supabase';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
-// Update LEGAL_BASE to your real domain once legal pages exist
-const LEGAL_BASE = 'https://vaulted.app';
+const LEGAL_BASE = 'https://vaultedstays.com';
 
 const BG      = '#0A0A0A';
 const TEXT    = '#F5F3EF';
@@ -28,7 +27,7 @@ function fmtDate(iso: string) {
   catch { return ''; }
 }
 
-// ─── Sub-components ────────────────────────────────────────────
+// ─── Sub-components ────────────────────────────────────────────────────────────────────
 
 function Header() {
   return (
@@ -191,7 +190,7 @@ function ChangePasswordForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-// ─── Main screen ────────────────────────────────────────────
+// ─── Main screen ───────────────────────────────────────────────────────────────────────
 
 export default function AccountTab() {
   const router = useRouter();
@@ -248,7 +247,7 @@ export default function AccountTab() {
 
   if (loading) return <View style={s.container} />;
 
-  // ── Logged out ─────────────────────────────────────────────
+  // ── Logged out ──────────────────────────────────────────────────────────────────────
   if (!user) {
     return (
       <SafeAreaView style={s.container} edges={['top']}>
@@ -271,7 +270,7 @@ export default function AccountTab() {
     );
   }
 
-  // ── Logged in ───────────────────────────────────────────
+  // ── Logged in ────────────────────────────────────────────────────────────────────────
   const vaultStatusLabel = vaultLoading ? '–' : (vault?.is_public ? 'PUBLIC' : 'PRIVATE');
 
   return (
@@ -426,7 +425,7 @@ export default function AccountTab() {
   );
 }
 
-// ─── Styles ─────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   inner: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 56 },
