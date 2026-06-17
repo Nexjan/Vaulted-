@@ -9,19 +9,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { listings } from '../../lib/listingsService';
 import { Listing } from '../../lib/types';
 import { getUniqueness } from '../../lib/uniqueness';
-import { formatPrice } from '../../lib/currency';
+import { formatPrice, convertPrice } from '../../lib/currency';
 import { useFavorites } from '../../lib/favorites';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { useVault } from '../../lib/vaultContext';
 import { useOnboarding } from '../../lib/onboarding';
+import { useCurrency, SUPPORTED_CURRENCIES } from '../../lib/currencyContext';
 
-// ─── reduced-motion check (web only) ──────────────────────────────────────────
 const REDUCE_MOTION =
   Platform.OS === 'web' &&
   typeof window !== 'undefined' &&
   (() => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
 
-// ─── tilt hook ─────────────────────────────────────────────────────────────────
 function useTilt() {
   const rotX = useRef(new Animated.Value(0)).current;
   const rotY = useRef(new Animated.Value(0)).current;
@@ -60,8 +59,6 @@ const MUTED   = '#555555';
 const SURFACE = '#141414';
 const DIVIDER = '#1E1E1E';
 
-// BUDGET FILTER: thresholds compared against listing.pricePerNight in native currency.
-// When user-currency selection is added, convert before comparing.
 const PRICE_OPTIONS = [
   { label: 'ANY',      value: null },
   { label: 'UNDER 100', value: 100 },
@@ -96,7 +93,6 @@ const VIBES: { id: VibeId; label: string; tags: string[]; types: string[] }[] = 
 
 const CONTINENT_OPTIONS = ['ALL','Africa','Asia','Europe','North America','South America','Oceania','Middle East'];
 
-// Maps listing.country → continent. Extend as real inventory from booking partners is added.
 const COUNTRY_CONTINENT: Record<string, string> = {
   'USA':'North America','Canada':'North America','Mexico':'North America',
   'Greece':'Europe','Scotland':'Europe','Finland':'Europe','France':'Europe',
@@ -130,7 +126,6 @@ const BEDROOM_OPTIONS = [
   { label: '4+',  value: 4 },
 ];
 
-// Amenity labels mapped to search strings for substring matching against listing.amenities.
 const AMENITY_OPTS: { label: string; search: string }[] = [
   { label: 'WiFi',             search: 'wifi'            },
   { label: 'Pool',             search: 'pool'            },
@@ -145,8 +140,8 @@ const AMENITY_OPTS: { label: string; search: string }[] = [
 const WM_LETTERS = 'VAULTED'.split('');
 
 export default function SearchScreen() {
+  const { displayCurrency } = useCurrency();
   const [query,             setQuery]             = useState('');
-  // Destination: city+country pair avoids ambiguity for same city name in different countries.
   const [selectedDestination, setSelectedDestination] = useState<{ city: string; country: string } | null>(null);
   const [selectedContinent, setSelectedContinent] = useState<string | null>(null);
   const [maxPrice,          setMaxPrice]          = useState<number | null>(null);
@@ -154,9 +149,6 @@ export default function SearchScreen() {
   const [minGuests,         setMinGuests]         = useState<number | null>(null);
   const [minBedrooms,       setMinBedrooms]       = useState<number | null>(null);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  // DATES: stored in state as UI shell only.
-  // Availability filtering wired in once live affiliate inventory is connected
-  // (Booking.com /availability, Vrbo /listings/:id/availability, Agoda Availability API).
   const [checkIn,           setCheckIn]           = useState('');
   const [checkOut,          setCheckOut]          = useState('');
   const [minRarity,         setMinRarity]         = useState<number | null>(null);
@@ -164,7 +156,6 @@ export default function SearchScreen() {
   const [selectedVibes,     setSelectedVibes]     = useState<VibeId[]>([]);
   const [sheetVisible,      setSheetVisible]      = useState(false);
 
-  // Destinations: unique {city, country} pairs from live listing data — no hardcoding.
   const destinations = useMemo(
     () =>
       Array.from(
@@ -173,7 +164,6 @@ export default function SearchScreen() {
     [],
   );
 
-  // Property types: generated from live data, new types appear automatically.
   const propertyTypes = useMemo(
     () => Array.from(new Set(listings.map((l) => l.propertyType))).sort(),
     [],
@@ -209,24 +199,19 @@ export default function SearchScreen() {
 
       if (selectedContinent) {
         const lc = COUNTRY_CONTINENT[listing.country];
-        // If country not in map, pass through rather than exclude.
         if (lc && lc !== selectedContinent) return false;
       }
 
-      if (maxPrice !== null && listing.pricePerNight > maxPrice) return false;
+      if (maxPrice !== null && convertPrice(listing.pricePerNight, listing.currency, displayCurrency) > maxPrice) return false;
       if (selectedType && listing.propertyType !== selectedType) return false;
 
-      // Guests: listing must accommodate at least minGuests people.
       if (minGuests !== null && listing.maxGuests < minGuests) return false;
 
-      // Bedrooms: Listing type does not include a bedrooms field yet.
-      // If the field exists on future listings, filter; otherwise pass through.
       if (minBedrooms !== null) {
         const beds = (listing as any).bedrooms;
         if (beds !== undefined && beds < minBedrooms) return false;
       }
 
-      // Amenities: all selected must be present (case-insensitive substring match).
       if (selectedAmenities.length > 0) {
         const al = listing.amenities.map((a) => a.toLowerCase());
         const allMatch = selectedAmenities.every((sel) => {
@@ -236,13 +221,9 @@ export default function SearchScreen() {
         if (!allMatch) return false;
       }
 
-      // DATES: not applied — see state comment above.
-
       if (minRarity !== null && getUniqueness(listing).score < minRarity) return false;
 
       if (q) {
-        // Text search covers city, region, and country so "Finland", "Lapland",
-        // "Scotland" etc. all resolve even if not in the destination chip list.
         const haystack = [
           listing.name, listing.city, listing.region,
           listing.country, listing.propertyType, ...listing.amenities,
@@ -267,16 +248,15 @@ export default function SearchScreen() {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'rarity':     return getUniqueness(b).score - getUniqueness(a).score;
-        case 'price_asc':  return a.pricePerNight - b.pricePerNight;
-        case 'price_desc': return b.pricePerNight - a.pricePerNight;
+        case 'price_asc':  return convertPrice(a.pricePerNight, a.currency, displayCurrency) - convertPrice(b.pricePerNight, b.currency, displayCurrency);
+        case 'price_desc': return convertPrice(b.pricePerNight, b.currency, displayCurrency) - convertPrice(a.pricePerNight, a.currency, displayCurrency);
         case 'rating':     return b.rating - a.rating;
       }
     });
 
     return filtered;
-  }, [query, selectedDestination, selectedContinent, maxPrice, selectedType, minGuests, minBedrooms, selectedAmenities, minRarity, sortBy, selectedVibes]);
+  }, [query, selectedDestination, selectedContinent, maxPrice, selectedType, minGuests, minBedrooms, selectedAmenities, minRarity, sortBy, selectedVibes, displayCurrency]);
 
-  // Badge count: number of active filter groups inside the sheet.
   const filterCount = useMemo(() => [
     selectedDestination !== null,
     selectedContinent !== null,
@@ -306,7 +286,6 @@ export default function SearchScreen() {
     if (prefs.maxPrice !== null)   setMaxPrice(prefs.maxPrice);
   }, [prefs]);
 
-  // ── Wordmark unlock-reveal animation ──────────────────────────────────────────
   const letterAnims = useRef(
     WM_LETTERS.map((_, i) => ({
       opacity: new Animated.Value(REDUCE_MOTION ? 1 : 0),
@@ -343,7 +322,6 @@ export default function SearchScreen() {
     }, 780);
     return () => clearTimeout(t);
   }, [wmWidth, vaultDone]);
-  // ──────────────────────────────────────────────────────────────────────────────
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -377,7 +355,6 @@ export default function SearchScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={GOLD} colors={[GOLD]} />}
       >
-        {/* ── Wordmark header ── */}
         <View style={styles.header}>
           <View style={styles.wordmarkRow} onLayout={(e) => setWmWidth(e.nativeEvent.layout.width)}>
             {WM_LETTERS.map((letter, i) => (
@@ -405,10 +382,7 @@ export default function SearchScreen() {
           </View>
         </View>
 
-        {/* ── Slim bar ── */}
         <View style={styles.slimBar}>
-
-          {/* Search input + Filters button */}
           <View style={styles.searchRow}>
             <TextInput
               value={query}
@@ -428,7 +402,6 @@ export default function SearchScreen() {
             </Pressable>
           </View>
 
-          {/* Vibe chips — quick-access, always visible */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.vibeRow}>
             {VIBES.map((vibe) => {
               const active = selectedVibes.includes(vibe.id);
@@ -444,7 +417,6 @@ export default function SearchScreen() {
             })}
           </ScrollView>
 
-          {/* Sort row */}
           <View style={styles.sortRow}>
             {SORT_OPTIONS.map((opt) => {
               const active = sortBy === opt.value;
@@ -460,7 +432,6 @@ export default function SearchScreen() {
 
         <View style={styles.divider} />
 
-        {/* ── Results ── */}
         {results.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyLabel}>NO STAYS MATCH</Text>
@@ -480,7 +451,6 @@ export default function SearchScreen() {
         )}
       </ScrollView>
 
-      {/* ── Filter sheet ── */}
       <FilterSheet
         visible={sheetVisible}
         onClose={() => setSheetVisible(false)}
@@ -512,7 +482,6 @@ export default function SearchScreen() {
   );
 }
 
-// ─── Filter sheet (bottom sheet modal) ────────────────────────────────────────
 function FilterSheet({
   visible, onClose,
   destinationOptions, selectedDestination, onDestination,
@@ -557,28 +526,18 @@ function FilterSheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalWrap}>
-        {/* Dim overlay — tap outside sheet to dismiss */}
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-
-        {/* Sheet panel */}
         <View style={[styles.sheet, { paddingBottom: insets.bottom + 8 }]}>
-          {/* Drag handle */}
           <View style={styles.sheetHandle} />
-
-          {/* Sheet header */}
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>FILTERS</Text>
             <Pressable onPress={onClose} hitSlop={12}>
               <Ionicons name="close" size={18} color={MUTED} />
             </Pressable>
           </View>
-
           <View style={styles.sheetDivider} />
-
-          {/* Scrollable sections */}
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetScroll}>
 
-            {/* LOCATION */}
             <SheetSection title="LOCATION">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
                 {destinationOptions.map((opt) => {
@@ -598,7 +557,6 @@ function FilterSheet({
               </ScrollView>
             </SheetSection>
 
-            {/* REGION / CONTINENT */}
             <SheetSection title="REGION / CONTINENT">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
                 {CONTINENT_OPTIONS.map((c) => {
@@ -616,7 +574,6 @@ function FilterSheet({
               </ScrollView>
             </SheetSection>
 
-            {/* BUDGET */}
             <SheetSection title="BUDGET">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
                 {PRICE_OPTIONS.map((opt) => (
@@ -631,7 +588,6 @@ function FilterSheet({
               </ScrollView>
             </SheetSection>
 
-            {/* PROPERTY TYPE */}
             <SheetSection title="PROPERTY TYPE">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
                 {typeOptions.map((opt) => (
@@ -646,7 +602,6 @@ function FilterSheet({
               </ScrollView>
             </SheetSection>
 
-            {/* GUESTS & BEDROOMS */}
             <SheetSection title="GUESTS & BEDROOMS">
               <Text style={styles.subLabel}>GUESTS</Text>
               <View style={styles.chipGroup}>
@@ -674,7 +629,6 @@ function FilterSheet({
               </View>
             </SheetSection>
 
-            {/* AMENITIES */}
             <SheetSection title="AMENITIES">
               <View style={styles.amenityGrid}>
                 {AMENITY_OPTS.map((opt) => {
@@ -694,18 +648,7 @@ function FilterSheet({
               </View>
             </SheetSection>
 
-            {/* DATES / AVAILABILITY — UI shell only */}
             <SheetSection title="DATES / AVAILABILITY">
-              {/*
-                DATE PICKER SHELL ─────────────────────────────────────────────────
-                Dates are stored in state but NOT applied to results filtering.
-                Wire real availability once live inventory APIs are connected:
-                  Booking.com: /v2/availability endpoint
-                  Vrbo:        /listings/{id}/availability
-                  Agoda:       Property Availability API
-                Replace TextInputs here with a date-range picker library at that time.
-                ───────────────────────────────────────────────────────────────────
-              */}
               <View style={styles.dateRow}>
                 <View style={styles.dateField}>
                   <Text style={styles.dateFieldLabel}>CHECK-IN</Text>
@@ -734,7 +677,6 @@ function FilterSheet({
               </Text>
             </SheetSection>
 
-            {/* RARITY */}
             <SheetSection title="RARITY">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
                 {RARITY_OPTIONS.map((opt) => (
@@ -749,9 +691,10 @@ function FilterSheet({
               </ScrollView>
             </SheetSection>
 
+            <CurrencySheetSection />
+
           </ScrollView>
 
-          {/* Sheet footer */}
           <View style={styles.sheetFooter}>
             <Pressable
               onPress={() => { onClearAll(); onClose(); }}
@@ -779,10 +722,34 @@ function SheetSection({ title, children }: { title: string; children: React.Reac
   );
 }
 
-// ─── Hero listing (first result, full-width) ───────────────────────────────────
+function CurrencySheetSection() {
+  const { displayCurrency, setDisplayCurrency } = useCurrency();
+  return (
+    <SheetSection title="DISPLAY CURRENCY">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+        {SUPPORTED_CURRENCIES.map((c) => {
+          const active = displayCurrency === c.code;
+          return (
+            <Pressable
+              key={c.code}
+              onPress={() => setDisplayCurrency(c.code)}
+              style={[styles.chip, active && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {c.code} {c.symbol}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </SheetSection>
+  );
+}
+
 function HeroListing({ listing, number }: { listing: Listing; number: number }) {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { displayCurrency } = useCurrency();
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
@@ -818,7 +785,7 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
               <View style={styles.heroMeta}>
                 <Text style={styles.heroRarity}>◆ {uniqueness.score}/100</Text>
                 <Text style={styles.heroPrice}>
-                  {formatPrice(listing.pricePerNight, listing.currency)}
+                  {formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}
                   <Text style={styles.heroUnit}> /night</Text>
                 </Text>
               </View>
@@ -838,10 +805,10 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
   );
 }
 
-// ─── Editorial row (subsequent results) ───────────────────────────────────────
 function EditorialRow({ listing, number }: { listing: Listing; number: number }) {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { displayCurrency } = useCurrency();
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
@@ -877,7 +844,7 @@ function EditorialRow({ listing, number }: { listing: Listing; number: number })
             <View style={styles.rowMeta}>
               <Text style={styles.rowRarity}>◆ {uniqueness.score}</Text>
               <Text style={styles.rowPrice}>
-                {formatPrice(listing.pricePerNight, listing.currency)}
+                {formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}
                 <Text style={styles.rowUnit}>/nt</Text>
               </Text>
             </View>
@@ -896,12 +863,10 @@ function EditorialRow({ listing, number }: { listing: Listing; number: number })
   );
 }
 
-// ─── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   scroll:    { paddingBottom: 48 },
 
-  // Header
   header: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 12 },
   wordmarkRow: { flexDirection: 'row', overflow: 'hidden' },
   wordmark: {
@@ -917,13 +882,11 @@ const styles = StyleSheet.create({
   headerLine:  { flex: 1, height: 1, backgroundColor: DIVIDER },
   clearAll:    { fontSize: 9, fontWeight: '700', color: MUTED, letterSpacing: 2, textDecorationLine: 'underline' },
 
-  // Slim bar
   slimBar: { paddingHorizontal: 20, paddingBottom: 4 },
 
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
   searchInput: {
-    flex: 1,
-    backgroundColor: SURFACE,
+    flex: 1, backgroundColor: SURFACE,
     borderWidth: 1, borderColor: DIVIDER, borderRadius: 2,
     paddingHorizontal: 14, paddingVertical: 11,
     fontSize: 13, color: TEXT, letterSpacing: 0.3,
@@ -954,28 +917,22 @@ const styles = StyleSheet.create({
 
   divider: { height: 1, backgroundColor: DIVIDER },
 
-  // Empty state
   empty:      { paddingTop: 72, alignItems: 'center' },
   emptyLabel: { fontSize: 10, fontWeight: '700', color: MUTED, letterSpacing: 2.5 },
   emptyHint:  { marginTop: 10, fontSize: 13, color: MUTED, fontStyle: 'italic' },
 
-  // ── Filter sheet modal ──────────────────────────────────────────────────────
   modalWrap: {
-    flex: 1,
-    justifyContent: 'flex-end',
+    flex: 1, justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.72)',
   },
   sheet: {
     backgroundColor: BG,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(200,168,107,0.25)',
+    borderTopWidth: 1, borderTopColor: 'rgba(200,168,107,0.25)',
     maxHeight: '88%',
   },
   sheetHandle: {
-    width: 36, height: 4,
-    backgroundColor: DIVIDER,
-    borderRadius: 2,
-    alignSelf: 'center',
+    width: 36, height: 4, backgroundColor: DIVIDER,
+    borderRadius: 2, alignSelf: 'center',
     marginTop: 12, marginBottom: 4,
   },
   sheetHeader: {
@@ -988,22 +945,15 @@ const styles = StyleSheet.create({
   sheetScroll: { paddingBottom: 8 },
 
   sheetSection: {
-    paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: DIVIDER,
+    paddingHorizontal: 20, paddingTop: 22, paddingBottom: 6,
+    borderBottomWidth: 1, borderBottomColor: DIVIDER,
   },
   sheetSectionTitle: {
     fontSize: 9, fontWeight: '700', color: GOLD,
     letterSpacing: 2.5, marginBottom: 14,
   },
-  subLabel: {
-    fontSize: 9, fontWeight: '700', color: MUTED,
-    letterSpacing: 2, marginBottom: 10,
-  },
+  subLabel: { fontSize: 9, fontWeight: '700', color: MUTED, letterSpacing: 2, marginBottom: 10 },
 
-  // Chips (shared)
   chipRow: { flexDirection: 'row', gap: 8, paddingBottom: 4 },
   chipGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: 4 },
   chip: {
@@ -1014,31 +964,24 @@ const styles = StyleSheet.create({
   chipText:       { fontSize: 9, fontWeight: '700', color: MUTED, letterSpacing: 1.5 },
   chipTextActive: { color: BG },
 
-  // Amenity grid (wraps)
   amenityGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: 4 },
 
-  // Date fields
   dateRow: { flexDirection: 'row', gap: 0 },
   dateField: { flex: 1 },
   dateSep: { width: 1, backgroundColor: DIVIDER, marginHorizontal: 12 },
   dateFieldLabel: { fontSize: 9, fontWeight: '700', color: MUTED, letterSpacing: 2, marginBottom: 8 },
   dateInput: {
-    backgroundColor: SURFACE,
-    borderWidth: 1, borderColor: '#2A2A2A',
-    paddingHorizontal: 12, paddingVertical: 10,
-    fontSize: 13, color: TEXT,
+    backgroundColor: SURFACE, borderWidth: 1, borderColor: '#2A2A2A',
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: TEXT,
   },
   dateNote: {
     marginTop: 10, marginBottom: 4,
-    fontSize: 11, color: MUTED,
-    fontStyle: 'italic', letterSpacing: 0.2,
+    fontSize: 11, color: MUTED, fontStyle: 'italic', letterSpacing: 0.2,
   },
 
-  // Sheet footer
   sheetFooter: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8,
-    gap: 14,
+    paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8, gap: 14,
     borderTopWidth: 1, borderTopColor: DIVIDER,
   },
   clearSheetBtn: { paddingVertical: 4 },
@@ -1049,7 +992,6 @@ const styles = StyleSheet.create({
   },
   applyBtnText: { fontSize: 11, fontWeight: '800', color: BG, letterSpacing: 2.5 },
 
-  // Hero listing
   heroOuter:  { marginHorizontal: 20, marginTop: 24, marginBottom: 24 },
   hero:       { height: 420, overflow: 'hidden' },
   heroPressed:{ opacity: 0.9 },
@@ -1082,7 +1024,6 @@ const styles = StyleSheet.create({
   heroUnit:     { fontSize: 11, fontWeight: '400', color: 'rgba(245,243,239,0.55)' },
   heroHeart:    { padding: 4, alignSelf: 'flex-end', paddingBottom: 2 },
 
-  // Editorial rows
   rowOuter:     { overflow: 'hidden' },
   row:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, gap: 14 },
   rowPressed:   { backgroundColor: '#111111' },
