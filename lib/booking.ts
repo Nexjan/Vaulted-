@@ -1,17 +1,7 @@
 import { Listing } from './types';
 
-// Swap BOOKING_AFFILIATE_ID with your Booking.com affiliate partner ID when ready.
-// Format: https://www.booking.com/searchresults.html?aid=YOUR_ID&ss=...
-const BOOKING_AFFILIATE_ID = '';
+const KLOOK_AFFILIATE_URL = 'https://klook.tpm.lv/G8f9qZX2';
 
-export function getBookingUrl(listing: Listing): string {
-  // Use the stored property URL when real Booking.com data is present
-  if (listing.bookingUrl) return listing.bookingUrl;
-
-  const destination = encodeURIComponent(`${listing.city}, ${listing.country}`);
-  if (BOOKING_AFFILIATE_ID) {
-    return `https://www.booking.com/searchresults.html?aid=${BOOKING_AFFILIATE_ID}&ss=${destination}&group_adults=2&no_rooms=1`;
-  }
-  // Fallback: Airbnb city search until affiliate ID is set
-  return `https://www.airbnb.com/s/${encodeURIComponent(listing.city)}/homes`;
+export function getBookingUrl(_listing: Listing): string {
+  return KLOOK_AFFILIATE_URL;
 }
