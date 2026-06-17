@@ -290,7 +290,7 @@ function HeroChapter({ onEnter }: { onEnter: () => void }) {
       >
         <Text style={styles.heroWordmark}>VAULTED</Text>
         <View style={styles.heroGoldLine} />
-        <Text style={styles.heroTagline}>Not every stay. Only the rare ones.</Text>
+        <Text style={styles.heroTagline}>Travel, worth collecting.</Text>
         <EnterButton onPress={onEnter} style={{ marginTop: 40 }} />
       </Animated.View>
 
@@ -373,7 +373,7 @@ function CollectionChapter({
           ))}
         </View>
         <Pressable style={styles.collLink} onPress={onEnter}>
-          <Text style={styles.collLinkText}>See all {TOTAL_STAYS} stays →</Text>
+          <Text style={styles.collLinkText}>Explore the collection →</Text>
         </Pressable>
       </Animated.View>
     </View>
@@ -462,7 +462,7 @@ function ClosingChapter({
         <View style={styles.closingGoldLine} />
         <Text style={styles.closingTagline}>Your collection awaits.</Text>
         <EnterButton onPress={onEnter} style={{ marginTop: 44 }} label="OPEN THE VAULT" />
-        <Text style={styles.closingTrust}>A curated collection · {TOTAL_STAYS} rare stays</Text>
+        <Text style={styles.closingTrust}>A curated collection.</Text>
         <View style={styles.legalRow}>
           <Pressable hitSlop={8}><Text style={styles.legalLink}>Privacy Policy</Text></Pressable>
           <Text style={styles.legalDot}>·</Text>

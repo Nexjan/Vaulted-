@@ -11,13 +11,13 @@ import { Listing } from '../../lib/types';
 import { getUniqueness } from '../../lib/uniqueness';
 import { useFavorites } from '../../lib/favorites';
 
-// ─── reduced-motion check (web only) ───────────────────────────────────────
+// ─── reduced-motion check (web only) ────────────────────────────────────────────
 const REDUCE_MOTION =
   Platform.OS === 'web' &&
   typeof window !== 'undefined' &&
   (() => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
 
-// ─── tilt hook ──────────────────────────────────────────────────────────────
+// ─── tilt hook ──────────────────────────────────────────────────────────────────
 function useTilt() {
   const rotX = useRef(new Animated.Value(0)).current;
   const rotY = useRef(new Animated.Value(0)).current;
@@ -209,7 +209,7 @@ export default function SearchScreen() {
     if (prefs.maxPrice !== null) setMaxPrice(prefs.maxPrice);
   }, [prefs]);
 
-  // ── Wordmark unlock-reveal animation ────────────────────────────────────────
+  // ── Wordmark unlock-reveal animation ────────────────────────────────────────────
   const letterAnims = useRef(
     WM_LETTERS.map((_, i) => ({
       opacity: new Animated.Value(REDUCE_MOTION ? 1 : 0),
@@ -301,7 +301,7 @@ export default function SearchScreen() {
           <View style={styles.headerMeta}>
             <Text style={styles.headerLabel}>
               {results.length === 1 ? '1 STAY' : `${results.length} STAYS`}
-              {hasFilters ? ' MATCHING' : ' · CURATED RARE COLLECTION'}
+              {hasFilters ? ' MATCHING' : ' · A CURATED COLLECTION'}
             </Text>
             <View style={styles.headerLine} />
             {hasFilters && (
