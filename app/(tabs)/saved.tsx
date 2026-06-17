@@ -7,6 +7,7 @@ import { listings } from '../../lib/listingsService';
 import { useFavorites } from '../../lib/favorites';
 import { getUniqueness } from '../../lib/uniqueness';
 import { Listing } from '../../lib/types';
+import { formatPrice } from '../../lib/currency';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { usePriceAlerts, getPriceDrop, PriceDrop } from '../../lib/priceAlerts';
 import { useAuth } from '../../lib/auth';
@@ -235,13 +236,13 @@ function VaultCard({ listing, index, drop }: { listing: Listing; index: number; 
               {drop ? (
                 <View style={styles.priceGroup}>
                   <Text style={styles.cardPriceDrop}>
-                    ${drop.live}<Text style={styles.cardUnit}>/nt</Text>
+                    {formatPrice(drop.live, listing.currency)}<Text style={styles.cardUnit}>/nt</Text>
                   </Text>
-                  <Text style={styles.priceWas}>${drop.lastSeen}</Text>
+                  <Text style={styles.priceWas}>{formatPrice(drop.lastSeen, listing.currency)}</Text>
                 </View>
               ) : (
                 <Text style={styles.cardPrice}>
-                  ${listing.pricePerNight}<Text style={styles.cardUnit}>/nt</Text>
+                  {formatPrice(listing.pricePerNight, listing.currency)}<Text style={styles.cardUnit}>/nt</Text>
                 </Text>
               )}
               <Pressable

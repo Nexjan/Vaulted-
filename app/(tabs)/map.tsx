@@ -8,6 +8,7 @@ import { CITY_COORDINATES, fitProjection } from '../../lib/geo';
 import { useFavorites } from '../../lib/favorites';
 import { getUniqueness } from '../../lib/uniqueness';
 import { Listing } from '../../lib/types';
+import { formatPrice } from '../../lib/currency';
 
 const BG = '#0A0A0A';
 const TEXT = '#F5F3EF';
@@ -181,7 +182,7 @@ function MapListingRow({
           <Text style={styles.rowLocation}>{listing.propertyType.toUpperCase()}</Text>
           <View style={styles.rowMeta}>
             <Text style={styles.rowRarity}>◆ {uniqueness.score}</Text>
-            <Text style={styles.rowPrice}>${listing.pricePerNight}<Text style={styles.rowUnit}>/nt</Text></Text>
+            <Text style={styles.rowPrice}>{formatPrice(listing.pricePerNight, listing.currency)}<Text style={styles.rowUnit}>/nt</Text></Text>
           </View>
         </View>
         <Pressable

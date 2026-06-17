@@ -5,6 +5,7 @@ import { Listing } from '../lib/types';
 import { Badge } from './Badge';
 import { FavoriteButton } from './FavoriteButton';
 import { SkeletonBlock } from './Skeleton';
+import { formatPrice } from '../lib/currency';
 
 const REDUCE_MOTION =
   Platform.OS === 'web' &&
@@ -48,7 +49,7 @@ export function ListingCard({ listing, badge, footnote }: Props) {
         {footnote ? <Text style={styles.footnote}>{footnote}</Text> : null}
         <View style={styles.metaRow}>
           <Text style={styles.rating}>★ {listing.rating.toFixed(2)} ({listing.reviewCount})</Text>
-          <Text style={styles.price}>${listing.pricePerNight} <Text style={styles.priceUnit}>/ night</Text></Text>
+          <Text style={styles.price}>{formatPrice(listing.pricePerNight, listing.currency)} <Text style={styles.priceUnit}>/ night</Text></Text>
         </View>
       </View>
     </Pressable>

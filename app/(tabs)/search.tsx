@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { listings } from '../../lib/listingsService';
 import { Listing } from '../../lib/types';
 import { getUniqueness } from '../../lib/uniqueness';
+import { formatPrice } from '../../lib/currency';
 import { useFavorites } from '../../lib/favorites';
 
 // ─── reduced-motion check (web only) ───────────────────────────────────────
@@ -63,11 +64,14 @@ const MUTED = '#555555';
 const SURFACE = '#141414';
 const DIVIDER = '#1E1E1E';
 
+// BUDGET FILTER: thresholds are compared against listing.pricePerNight in the
+// listing's native currency. When user-currency selection is added, convert
+// listing.pricePerNight to the user's currency before comparing these values.
 const PRICE_OPTIONS = [
   { label: 'ANY', value: null },
-  { label: 'UNDER $100', value: 100 },
-  { label: 'UNDER $150', value: 150 },
-  { label: 'UNDER $250', value: 250 },
+  { label: 'UNDER 100', value: 100 },
+  { label: 'UNDER 150', value: 150 },
+  { label: 'UNDER 250', value: 250 },
 ] as const;
 
 const RARITY_OPTIONS = [
@@ -130,18 +134,26 @@ const WM_LETTERS = 'VAULTED'.split('');
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  // Destination filter: city + country pair so "Paris, TX" and "Paris, France" are distinct.
+  const [selectedDestination, setSelectedDestination] = useState<{ city: string; country: string } | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [minRarity, setMinRarity] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<SortValue>('rarity');
   const [selectedVibes, setSelectedVibes] = useState<VibeId[]>([]);
 
-  const cities = useMemo(
-    () => Array.from(new Set(listings.map((l) => l.city))).sort(),
+  // Destinations: unique {city, country} pairs pulled from live listing data.
+  // New locations appear automatically as inventory grows — no hardcoding.
+  const destinations = useMemo(
+    () =>
+      Array.from(
+        new Map(listings.map((l) => [`${l.city}::${l.country}`, { city: l.city, country: l.country }])).values(),
+      ).sort((a, b) => a.city.localeCompare(b.city)),
     [],
   );
 
+  // Property types: generated from whatever types exist in the data.
+  // Unknown types from new inventory appear automatically in the filter.
   const propertyTypes = useMemo(
     () => Array.from(new Set(listings.map((l) => l.propertyType))).sort(),
     [],
@@ -150,12 +162,26 @@ export default function SearchScreen() {
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = listings.filter((listing) => {
-      if (selectedCity && listing.city !== selectedCity) return false;
+      // Destination filter matches by city+country so the same city name in
+      // different countries is unambiguous ("Paris, TX" vs "Paris, France").
+      if (
+        selectedDestination &&
+        (listing.city !== selectedDestination.city || listing.country !== selectedDestination.country)
+      ) return false;
       if (maxPrice !== null && listing.pricePerNight > maxPrice) return false;
       if (selectedType && listing.propertyType !== selectedType) return false;
       if (minRarity !== null && getUniqueness(listing).score < minRarity) return false;
       if (q) {
-        const haystack = [listing.name, listing.city, listing.country, listing.propertyType, ...listing.amenities]
+        // Text search covers city, region, and country — so "Thailand", "Lapland",
+        // or "Australia" all resolve even if not in the destination chip list.
+        const haystack = [
+          listing.name,
+          listing.city,
+          listing.region,
+          listing.country,
+          listing.propertyType,
+          ...listing.amenities,
+        ]
           .join(' ')
           .toLowerCase();
         if (!haystack.includes(q)) return false;
@@ -183,11 +209,20 @@ export default function SearchScreen() {
     });
 
     return filtered;
-  }, [query, selectedCity, maxPrice, selectedType, minRarity, sortBy, selectedVibes]);
+  }, [query, selectedDestination, maxPrice, selectedType, minRarity, sortBy, selectedVibes]);
 
-  const cityOptions = useMemo(
-    () => [{ label: 'ALL', value: null as string | null }, ...cities.map((c) => ({ label: c.toUpperCase(), value: c }))],
-    [cities],
+  // Destination chips: show "CITY · COUNTRY" for every location so international
+  // context is always visible (e.g. "SANTORINI · GREECE", "EDINBURGH · SCOTLAND").
+  const destinationOptions = useMemo(
+    () => [
+      { label: 'ALL', city: null as string | null, country: null as string | null },
+      ...destinations.map((d) => ({
+        label: `${d.city.toUpperCase()} · ${d.country.toUpperCase()}`,
+        city: d.city,
+        country: d.country,
+      })),
+    ],
+    [destinations],
   );
 
   const typeOptions = useMemo(
@@ -195,7 +230,7 @@ export default function SearchScreen() {
     [propertyTypes],
   );
 
-  const hasFilters = !!(query.trim() || selectedCity || maxPrice !== null || selectedType || minRarity !== null || sortBy !== 'rarity' || selectedVibes.length > 0);
+  const hasFilters = !!(query.trim() || selectedDestination || maxPrice !== null || selectedType || minRarity !== null || sortBy !== 'rarity' || selectedVibes.length > 0);
   const toggleVibe = (id: VibeId) =>
     setSelectedVibes((prev) => prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]);
   const { vaultDone } = useVault();
@@ -253,7 +288,7 @@ export default function SearchScreen() {
 
   const clearAll = () => {
     setQuery('');
-    setSelectedCity(null);
+    setSelectedDestination(null);
     setMaxPrice(null);
     setSelectedType(null);
     setMinRarity(null);
@@ -343,11 +378,16 @@ export default function SearchScreen() {
 
           <Text style={styles.filterLabel}>LOCATION</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-            {cityOptions.map((opt) => {
-              const active = selectedCity === opt.value;
+            {destinationOptions.map((opt) => {
+              const active = opt.city === null
+                ? selectedDestination === null
+                : selectedDestination?.city === opt.city && selectedDestination?.country === opt.country;
               return (
-                <Pressable key={opt.label} onPress={() => setSelectedCity(opt.value)}
-                  style={[styles.chip, active && styles.chipActive]}>
+                <Pressable
+                  key={opt.label}
+                  onPress={() => setSelectedDestination(opt.city ? { city: opt.city, country: opt.country! } : null)}
+                  style={[styles.chip, active && styles.chipActive]}
+                >
                   <Text style={[styles.chipText, active && styles.chipTextActive]}>{opt.label}</Text>
                 </Pressable>
               );
@@ -474,7 +514,7 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
               <View style={styles.heroMeta}>
                 <Text style={styles.heroRarity}>◆ {uniqueness.score}/100</Text>
                 <Text style={styles.heroPrice}>
-                  ${listing.pricePerNight}
+                  {formatPrice(listing.pricePerNight, listing.currency)}
                   <Text style={styles.heroUnit}> /night</Text>
                 </Text>
               </View>
@@ -536,7 +576,7 @@ function EditorialRow({ listing, number }: { listing: Listing; number: number })
             <View style={styles.rowMeta}>
               <Text style={styles.rowRarity}>◆ {uniqueness.score}</Text>
               <Text style={styles.rowPrice}>
-                ${listing.pricePerNight}
+                {formatPrice(listing.pricePerNight, listing.currency)}
                 <Text style={styles.rowUnit}>/nt</Text>
               </Text>
             </View>

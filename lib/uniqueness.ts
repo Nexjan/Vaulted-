@@ -1,11 +1,12 @@
-import { Listing, PropertyType } from './types';
+import { Listing } from './types';
 
 /**
  * Base rarity per property type, on a 0-10 scale.
  * Common stays (apartments, cabins, villas) score low; one-of-a-kind
  * structures (lighthouses, caves, castle towers) score high.
+ * Unknown types (new inventory) fall back to the ?? 1 default below.
  */
-const PROPERTY_TYPE_RARITY: Record<PropertyType, number> = {
+const PROPERTY_TYPE_RARITY: Record<string, number> = {
   Apartment: 1,
   Cabin: 2,
   Villa: 3,

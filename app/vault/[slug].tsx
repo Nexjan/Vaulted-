@@ -10,6 +10,7 @@ import { listings as allListings } from '../../lib/listingsService';
 import { getUniqueness } from '../../lib/uniqueness';
 import type { Listing } from '../../lib/types';
 import { SkeletonBlock } from '../../components/Skeleton';
+import { formatPrice } from '../../lib/currency';
 
 const BG      = '#0A0A0A';
 const TEXT    = '#F5F3EF';
@@ -68,7 +69,7 @@ function GalleryCard({ listing, index }: { listing: Listing; index: number }) {
           </Text>
           <View style={s.cardMeta}>
             <Text style={s.cardPrice}>
-              ${listing.pricePerNight}
+              {formatPrice(listing.pricePerNight, listing.currency)}
               <Text style={s.cardUnit}> /night</Text>
             </Text>
             <View style={s.viewCta}>

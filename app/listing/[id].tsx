@@ -13,6 +13,7 @@ import { useFavorites } from '../../lib/favorites';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { getBookingUrl } from '../../lib/booking';
 import { Listing } from '../../lib/types';
+import { formatPrice } from '../../lib/currency';
 
 const REDUCE_MOTION =
   Platform.OS === 'web' &&
@@ -43,7 +44,7 @@ function ReserveBar({ listing }: { listing: Listing }) {
   return (
     <View style={[styles.reserveBar, { paddingBottom: insets.bottom + 14 }]}>
       <View style={styles.reservePriceGroup}>
-        <Text style={styles.reservePrice}>${listing.pricePerNight}</Text>
+        <Text style={styles.reservePrice}>{formatPrice(listing.pricePerNight, listing.currency)}</Text>
         <Text style={styles.reservePriceUnit}>/ night</Text>
       </View>
       <Pressable
@@ -81,14 +82,15 @@ export default function ListingDetailScreen() {
   const active = isFavorite(listing.id);
 
   const dealTier = priceComparison.tier;
+  const avgFormatted = formatPrice(Math.round(priceComparison.comparableAverage), listing.currency);
   const dealCopy =
     priceComparison.comparableCount === 0
       ? "Insufficient comparable stays in this city to benchmark the price."
       : dealTier === 'great-deal'
-        ? `Priced ${Math.round(Math.abs(priceComparison.percentDiff))}% below the $${Math.round(priceComparison.comparableAverage)}/night city average — a great deal.`
+        ? `Priced ${Math.round(Math.abs(priceComparison.percentDiff))}% below the ${avgFormatted}/night city average — a great deal.`
         : dealTier === 'above-average'
-          ? `Runs ${Math.round(Math.abs(priceComparison.percentDiff))}% above the $${Math.round(priceComparison.comparableAverage)}/night city average.`
-          : `Close to the $${Math.round(priceComparison.comparableAverage)}/night city average — a fair price.`;
+          ? `Runs ${Math.round(Math.abs(priceComparison.percentDiff))}% above the ${avgFormatted}/night city average.`
+          : `Close to the ${avgFormatted}/night city average — a fair price.`;
 
   return (
     <View style={styles.screen}>
@@ -168,7 +170,7 @@ export default function ListingDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>PRICE CHECK</Text>
           <View style={styles.priceRow}>
-            <Text style={styles.price}>${listing.pricePerNight}</Text>
+            <Text style={styles.price}>{formatPrice(listing.pricePerNight, listing.currency)}</Text>
             <Text style={styles.priceUnit}>/ night</Text>
             {dealTier === 'great-deal' && (
               <View style={styles.dealBadge}>
@@ -184,7 +186,7 @@ export default function ListingDetailScreen() {
         {/* ── Price history ── */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>PRICE HISTORY</Text>
-          <PriceHistoryChart history={priceHistory} />
+          <PriceHistoryChart history={priceHistory} currency={listing.currency} />
         </View>
 
         <View style={styles.divider} />
