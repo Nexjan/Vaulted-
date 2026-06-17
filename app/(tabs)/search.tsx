@@ -301,7 +301,7 @@ export default function SearchScreen() {
           <View style={styles.headerMeta}>
             <Text style={styles.headerLabel}>
               {results.length === 1 ? '1 STAY' : `${results.length} STAYS`}
-              {hasFilters ? ' MATCHING' : ' · CURATED RARE COLLECTION'}
+              {hasFilters ? ' MATCHING' : ' · A CURATED COLLECTION'}
             </Text>
             <View style={styles.headerLine} />
             {hasFilters && (
