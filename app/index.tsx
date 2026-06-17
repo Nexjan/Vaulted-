@@ -43,7 +43,7 @@ const HERO_IMG     = TOP_LISTINGS[0]?.imageUrls?.[0] ?? '';
 const CLOSING_IMG  = 'https://loremflickr.com/800/600/ocean,night?lock=800';
 const TOTAL_STAYS  = listings.length;
 
-// ─── returning-user helpers ────────────────────────────────────────────────────
+// ─── returning-user helpers ───────────────────────────────────────────────────
 const VAULT_KEY = 'vaulted_entered';
 
 function hasEnteredBefore(): boolean {
@@ -188,9 +188,10 @@ function HeroChapter({ onEnter }: { onEnter: () => void }) {
   const rightX        = useRef(new Animated.Value(0)).current;
   const contentAlpha  = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
   const contentY      = useRef(new Animated.Value(REDUCE_MOTION ? 0 : 28)).current;
-  const imgAlpha      = useRef(new Animated.Value(0)).current;
-  const hintAlpha     = useRef(new Animated.Value(REDUCE_MOTION ? 0.45 : 0)).current;
-  const bounceY = useRef(new Animated.Value(0)).current;
+  const imgAlpha  = useRef(new Animated.Value(0)).current;
+  const hintAlpha = useRef(new Animated.Value(REDUCE_MOTION ? 0.6 : 0)).current;
+  const chevY     = useRef(new Animated.Value(0)).current;
+  const chevA     = useRef(new Animated.Value(REDUCE_MOTION ? 0.85 : 0)).current;
 
   useEffect(() => {
     if (REDUCE_MOTION) return;
@@ -213,7 +214,7 @@ function HeroChapter({ onEnter }: { onEnter: () => void }) {
         Animated.timing(contentAlpha, { toValue: 1, duration: 620, easing: E, useNativeDriver: true }),
         Animated.timing(contentY,     { toValue: 0, duration: 620, easing: E, useNativeDriver: true }),
       ]),
-      Animated.timing(hintAlpha, { toValue: 0.45, duration: 500, useNativeDriver: true }),
+      Animated.timing(hintAlpha, { toValue: 0.7, duration: 500, useNativeDriver: true }),
     ]).start();
   }, []);
 
@@ -222,8 +223,22 @@ function HeroChapter({ onEnter }: { onEnter: () => void }) {
     const t = setTimeout(() => {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(bounceY, { toValue: 7, duration: 750, easing: Easing.inOut(Easing.sine), useNativeDriver: true }),
-          Animated.timing(bounceY, { toValue: 0, duration: 750, easing: Easing.inOut(Easing.sine), useNativeDriver: true }),
+          // Appear at top
+          Animated.timing(chevA, { toValue: 0.9, duration: 250, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+          // Drop and fade out together
+          Animated.parallel([
+            Animated.timing(chevY, { toValue: 20, duration: 900, easing: Easing.in(Easing.ease), useNativeDriver: true }),
+            Animated.sequence([
+              Animated.delay(200),
+              Animated.timing(chevA, { toValue: 0, duration: 700, useNativeDriver: true }),
+            ]),
+          ]),
+          // Reset instantly then pause before next cycle
+          Animated.parallel([
+            Animated.timing(chevY, { toValue: 0, duration: 1, useNativeDriver: true }),
+            Animated.timing(chevA, { toValue: 0, duration: 1, useNativeDriver: true }),
+          ]),
+          Animated.delay(600),
         ])
       ).start();
     }, 3200);
@@ -280,9 +295,11 @@ function HeroChapter({ onEnter }: { onEnter: () => void }) {
       </Animated.View>
 
       {/* Scroll hint */}
-      <Animated.View style={[styles.scrollHint, { opacity: hintAlpha, transform: [{ translateY: bounceY }] }]} pointerEvents="none">
+      <Animated.View style={[styles.scrollHint, { opacity: hintAlpha }]} pointerEvents="none">
         <Text style={styles.scrollHintText}>SCROLL TO DISCOVER</Text>
-        <View style={styles.scrollHintLine} />
+        <Animated.Text style={[styles.chevronChar, { transform: [{ translateY: chevY }], opacity: chevA }]}>
+          ∨
+        </Animated.Text>
       </Animated.View>
     </View>
   );
@@ -588,16 +605,16 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   scrollHintText: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '700',
     color: TEXT,
     letterSpacing: 3,
   },
-  scrollHintLine: {
-    marginTop: 10,
-    width: 1.5, height: 36,
-    backgroundColor: GOLD,
-    borderRadius: 1,
+  chevronChar: {
+    marginTop: 12,
+    fontSize: 24,
+    color: GOLD,
+    lineHeight: 28,
   },
 
   // ── CTA button (shared) ───────────────────────────────────────────────────
