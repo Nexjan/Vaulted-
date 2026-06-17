@@ -10,7 +10,8 @@ import { listings as allListings } from '../../lib/listingsService';
 import { getUniqueness } from '../../lib/uniqueness';
 import type { Listing } from '../../lib/types';
 import { SkeletonBlock } from '../../components/Skeleton';
-import { formatPrice } from '../../lib/currency';
+import { formatPrice, convertPrice } from '../../lib/currency';
+import { useCurrency } from '../../lib/currencyContext';
 
 const BG      = '#0A0A0A';
 const TEXT    = '#F5F3EF';
@@ -21,6 +22,7 @@ const DIVIDER = '#1E1E1E';
 
 function GalleryCard({ listing, index }: { listing: Listing; index: number }) {
   const router = useRouter();
+  const { displayCurrency } = useCurrency();
   const uniqueness = getUniqueness(listing);
   const imgOpacity = useRef(new Animated.Value(0)).current;
   const entranceOpacity = useRef(new Animated.Value(0)).current;
@@ -69,7 +71,7 @@ function GalleryCard({ listing, index }: { listing: Listing; index: number }) {
           </Text>
           <View style={s.cardMeta}>
             <Text style={s.cardPrice}>
-              {formatPrice(listing.pricePerNight, listing.currency)}
+              {formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}
               <Text style={s.cardUnit}> /night</Text>
             </Text>
             <View style={s.viewCta}>
@@ -85,6 +87,7 @@ function GalleryCard({ listing, index }: { listing: Listing; index: number }) {
 export default function PublicVaultScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router   = useRouter();
+  const { displayCurrency } = useCurrency();
 
   const [displayName, setDisplayName]   = useState('');
   const [vaulted, setVaulted]           = useState<Listing[]>([]);
@@ -141,7 +144,7 @@ export default function PublicVaultScreen() {
     );
   }
 
-  const totalValue = vaulted.reduce((sum, l) => sum + l.pricePerNight, 0);
+  const totalValue = vaulted.reduce((sum, l) => sum + convertPrice(l.pricePerNight, l.currency, displayCurrency), 0);
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
@@ -166,8 +169,8 @@ export default function PublicVaultScreen() {
             </View>
             <View style={s.statSep} />
             <View style={s.statBox}>
-              <Text style={s.statValue}>${totalValue.toLocaleString()}</Text>
-              <Text style={s.statLabel}>COMBINED $/NIGHT</Text>
+              <Text style={s.statValue}>{formatPrice(totalValue, displayCurrency)}</Text>
+              <Text style={s.statLabel}>COMBINED / NIGHT</Text>
             </View>
           </View>
         </View>

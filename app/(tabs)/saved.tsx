@@ -7,7 +7,8 @@ import { listings } from '../../lib/listingsService';
 import { useFavorites } from '../../lib/favorites';
 import { getUniqueness } from '../../lib/uniqueness';
 import { Listing } from '../../lib/types';
-import { formatPrice } from '../../lib/currency';
+import { formatPrice, convertPrice } from '../../lib/currency';
+import { useCurrency } from '../../lib/currencyContext';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { usePriceAlerts, getPriceDrop, PriceDrop } from '../../lib/priceAlerts';
 import { useAuth } from '../../lib/auth';
@@ -134,6 +135,7 @@ function SharePanel({ vault, svLoading, saving, error, setPublic }: SharePanelPr
 function VaultCard({ listing, index, drop }: { listing: Listing; index: number; drop: PriceDrop | null }) {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { displayCurrency } = useCurrency();
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
 
@@ -236,13 +238,13 @@ function VaultCard({ listing, index, drop }: { listing: Listing; index: number; 
               {drop ? (
                 <View style={styles.priceGroup}>
                   <Text style={styles.cardPriceDrop}>
-                    {formatPrice(drop.live, listing.currency)}<Text style={styles.cardUnit}>/nt</Text>
+                    {formatPrice(drop.live, listing.currency, displayCurrency)}<Text style={styles.cardUnit}>/nt</Text>
                   </Text>
-                  <Text style={styles.priceWas}>{formatPrice(drop.lastSeen, listing.currency)}</Text>
+                  <Text style={styles.priceWas}>{formatPrice(drop.lastSeen, listing.currency, displayCurrency)}</Text>
                 </View>
               ) : (
                 <Text style={styles.cardPrice}>
-                  {formatPrice(listing.pricePerNight, listing.currency)}<Text style={styles.cardUnit}>/nt</Text>
+                  {formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}<Text style={styles.cardUnit}>/nt</Text>
                 </Text>
               )}
               <Pressable
@@ -268,6 +270,7 @@ export default function SavedScreen() {
   const { favoriteIds, isLoaded } = useFavorites();
   const { alerts, recordPrice, isLoaded: alertsLoaded } = usePriceAlerts();
   const { vault: sharedVault, loading: svLoading, saving: svSaving, error: svError, setPublic, refresh: refreshVault } = useSharedVault();
+  const { displayCurrency } = useCurrency();
   const [refreshing, setRefreshing] = useState(false);
 
   const vaulted = useMemo(
@@ -275,7 +278,10 @@ export default function SavedScreen() {
     [favoriteIds],
   );
 
-  const totalValue = vaulted.reduce((sum, l) => sum + l.pricePerNight, 0);
+  const totalValue = useMemo(
+    () => vaulted.reduce((sum, l) => sum + convertPrice(l.pricePerNight, l.currency, displayCurrency), 0),
+    [vaulted, displayCurrency],
+  );
 
   // Record base price the first time each item is seen in the vault
   useEffect(() => {
@@ -327,8 +333,8 @@ export default function SavedScreen() {
             </View>
             <View style={styles.statSep} />
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>${totalValue.toLocaleString()}</Text>
-              <Text style={styles.statLabel}>COMBINED $/NIGHT</Text>
+              <Text style={styles.statValue}>{formatPrice(totalValue, displayCurrency)}</Text>
+              <Text style={styles.statLabel}>COMBINED / NIGHT</Text>
             </View>
           </View>
         </View>

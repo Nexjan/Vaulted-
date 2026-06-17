@@ -17,6 +17,7 @@ import { SkeletonBlock } from '../../components/Skeleton';
 import { getBookingUrl } from '../../lib/booking';
 import { Listing } from '../../lib/types';
 import { formatPrice } from '../../lib/currency';
+import { useCurrency } from '../../lib/currencyContext';
 
 const REDUCE_MOTION =
   Platform.OS === 'web' &&
@@ -201,6 +202,7 @@ function LocationSection({ listing }: { listing: Listing }) {
 // ─── Reserve bar (sticky) ─────────────────────────────────────────────────────
 function ReserveBar({ listing }: { listing: Listing }) {
   const insets = useSafeAreaInsets();
+  const { displayCurrency } = useCurrency();
   const sheenX = useRef(new Animated.Value(-200)).current;
 
   const runSheen = () => {
@@ -224,7 +226,7 @@ function ReserveBar({ listing }: { listing: Listing }) {
   return (
     <View style={[s.reserveBar, { paddingBottom: insets.bottom + 14 }]}>
       <View style={s.reservePriceGroup}>
-        <Text style={s.reservePrice}>{formatPrice(listing.pricePerNight, listing.currency)}</Text>
+        <Text style={s.reservePrice}>{formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}</Text>
         <Text style={s.reservePriceUnit}>/ night</Text>
       </View>
       <Pressable
@@ -249,6 +251,7 @@ export default function ListingDetailScreen() {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { displayCurrency } = useCurrency();
   const [activePhoto, setActivePhoto] = useState(0);
 
   const listing = useMemo(() => listings.find((item) => item.id === id), [id]);
@@ -272,7 +275,7 @@ export default function ListingDetailScreen() {
   const HERO_H         = Math.min(Math.round(width * 0.72), 460);
 
   const dealTier       = priceComparison.tier;
-  const avgFormatted   = formatPrice(Math.round(priceComparison.comparableAverage), listing.currency);
+  const avgFormatted   = formatPrice(Math.round(priceComparison.comparableAverage), listing.currency, displayCurrency);
   const dealCopy =
     priceComparison.comparableCount === 0
       ? 'Insufficient comparable stays in this city to benchmark the price.'
@@ -358,7 +361,7 @@ export default function ListingDetailScreen() {
           </View>
           <View style={s.statDivider} />
           <View style={s.statGroup}>
-            <Text style={s.statPrice}>{formatPrice(listing.pricePerNight, listing.currency)}</Text>
+            <Text style={s.statPrice}>{formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}</Text>
             <Text style={s.statLabel}>PER NIGHT</Text>
           </View>
         </View>
@@ -412,7 +415,7 @@ export default function ListingDetailScreen() {
         <View style={s.section}>
           <Text style={s.sectionLabel}>PRICE CHECK</Text>
           <View style={s.priceCheckRow}>
-            <Text style={s.priceCheckValue}>{formatPrice(listing.pricePerNight, listing.currency)}</Text>
+            <Text style={s.priceCheckValue}>{formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}</Text>
             <Text style={s.priceCheckUnit}>/ night</Text>
             {dealTier === 'great-deal' && (
               <View style={s.dealBadge}>

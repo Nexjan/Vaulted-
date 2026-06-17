@@ -1,16 +1,6 @@
-// ─── CURRENCY FORMATTING ──────────────────────────────────────────────────────
-// All price display in the app should go through formatPrice() rather than
-// hardcoding "$". Listings carry an ISO 4217 currency field; this function
-// maps it to the correct symbol.
-//
-// MULTI-CURRENCY INTEGRATION POINT ▼
-// To support user-selected display currency or real-time conversion:
-//   1. Add a `targetCurrency` param and an `exchangeRate` (or fetch from a rates
-//      provider such as Open Exchange Rates, ECB, or Wise).
-//   2. Multiply `amount` by the rate before formatting.
-//   3. Swap `currency` → `targetCurrency` in the symbol lookup.
-//   e.g. formatPrice(listing.pricePerNight, listing.currency, userCurrency, rates)
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── CURRENCY FORMATTING & CONVERSION ─────────────────────────────────────────
+// All price display in the app goes through formatPrice().
+// All currency conversion goes through convertPrice().
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$',
@@ -30,8 +20,51 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   CHF: 'Fr ',
 };
 
-/** Returns a formatted price string using the listing's own currency symbol. */
-export function formatPrice(amount: number, currency: string = 'USD'): string {
-  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `;
-  return `${symbol}${Math.round(amount).toLocaleString()}`;
+// ─── STATIC EXCHANGE RATES ───────────────────────────────────────────────────
+// Base currency: USD. Approximate rates as of 2026-06.
+// INTEGRATION POINT: Replace with a live exchange-rate API call
+// (e.g., Open Exchange Rates, ECB, Wise) — only this function needs updating.
+const RATES_FROM_USD: Record<string, number> = {
+  USD: 1.000,
+  EUR: 0.925,
+  GBP: 0.792,
+  CAD: 1.362,
+  AUD: 1.535,
+  JPY: 149.50,
+  SGD: 1.340,
+  THB: 35.20,
+  IDR: 15800,
+  MXN: 17.15,
+  BRL: 4.97,
+  AED: 3.673,
+  INR: 83.50,
+  KRW: 1325,
+  CHF: 0.895,
+};
+
+/**
+ * Convert `amount` from one currency to another using the static rate table.
+ * This is the single authoritative conversion function for the entire app.
+ */
+export function convertPrice(amount: number, from: string, to: string): number {
+  if (from === to) return amount;
+  const fromRate = RATES_FROM_USD[from] ?? 1;
+  const toRate   = RATES_FROM_USD[to]   ?? 1;
+  return (amount / fromRate) * toRate;
+}
+
+/**
+ * Format a price for display.
+ * - 2-arg form (existing callers): formatPrice(amount, currency)
+ *   Shows the amount in its native currency — no conversion.
+ * - 3-arg form (currency switcher): formatPrice(amount, fromCurrency, displayCurrency)
+ *   Converts amount from fromCurrency → displayCurrency before rendering.
+ */
+export function formatPrice(amount: number, fromCurrency: string = 'USD', displayCurrency?: string): string {
+  const target    = displayCurrency ?? fromCurrency;
+  const converted = (displayCurrency && displayCurrency !== fromCurrency)
+    ? convertPrice(amount, fromCurrency, displayCurrency)
+    : amount;
+  const symbol = CURRENCY_SYMBOLS[target] ?? `${target} `;
+  return `${symbol}${Math.round(converted).toLocaleString()}`;
 }

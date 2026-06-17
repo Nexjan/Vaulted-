@@ -10,6 +10,7 @@ import { usePriceAlerts, getPriceDrop } from '../../lib/priceAlerts';
 import { useSharedVault } from '../../lib/sharedVault';
 import { listings } from '../../lib/listingsService';
 import { supabase } from '../../lib/supabase';
+import { useCurrency, SUPPORTED_CURRENCIES } from '../../lib/currencyContext';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
@@ -197,6 +198,7 @@ export default function AccountTab() {
   const { favoriteIds } = useFavorites();
   const { alerts } = usePriceAlerts();
   const { vault, loading: vaultLoading } = useSharedVault();
+  const { displayCurrency, setDisplayCurrency } = useCurrency();
 
   const [emailOpen, setEmailOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
@@ -327,6 +329,30 @@ export default function AccountTab() {
               onPress={() => router.navigate('/(tabs)/saved')}
             />
           )}
+        </View>
+
+        {/* ── PREFERENCES ── */}
+        <SectionHead label="PREFERENCES" />
+        <View style={[s.card, { marginBottom: 28 }]}>
+          <View style={s.row}>
+            <Text style={s.rowText}>Display Currency</Text>
+          </View>
+          <View style={s.rowDivider} />
+          <View style={s.currencyChips}>
+            {SUPPORTED_CURRENCIES.map((c) => {
+              const active = displayCurrency === c.code;
+              return (
+                <Pressable
+                  key={c.code}
+                  onPress={() => setDisplayCurrency(c.code)}
+                  style={[s.currencyChip, active && s.currencyChipActive]}
+                >
+                  <Text style={[s.currencyChipCode, active && s.currencyChipCodeActive]}>{c.code}</Text>
+                  <Text style={[s.currencyChipSymbol, active && s.currencyChipSymbolActive]}>{c.symbol}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
         {/* ── ACCOUNT ── */}
@@ -557,6 +583,40 @@ const s = StyleSheet.create({
   },
   deleteConfirmText: { fontSize: 10, fontWeight: '700', color: DANGER, letterSpacing: 1.5 },
   deletingText: { padding: 16, fontSize: 12, color: MUTED, fontStyle: 'italic' },
+
+  // Currency chips
+  currencyChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    padding: 14,
+  },
+  currencyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  currencyChipActive: {
+    borderColor: GOLD,
+    backgroundColor: 'rgba(200,168,107,0.08)',
+  },
+  currencyChipCode: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: MUTED,
+    letterSpacing: 1.5,
+  },
+  currencyChipCodeActive: { color: GOLD },
+  currencyChipSymbol: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: MUTED,
+  },
+  currencyChipSymbolActive: { color: GOLD },
 
   // Logged out
   pitch: { fontSize: 14, color: MUTED, textAlign: 'center', lineHeight: 22, marginTop: 20, marginBottom: 36 },

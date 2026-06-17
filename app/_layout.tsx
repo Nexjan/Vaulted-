@@ -12,6 +12,7 @@ import { PriceAlertsProvider } from '../lib/priceAlerts';
 import { AuthProvider } from '../lib/auth';
 import { VaultSealProvider } from '../lib/vaultSeal';
 import { VaultSealOverlay } from '../components/VaultSealOverlay';
+import { CurrencyProvider } from '../lib/currencyContext';
 import type { OnboardingPrefs } from '../lib/onboarding';
 
 function AppShell() {
@@ -55,19 +56,21 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <VaultSealProvider>
-          <FavoritesProvider>
-            <UserReviewsProvider>
-              <VaultProvider>
-                <OnboardingProvider>
-                  <PriceAlertsProvider>
-                    <AppShell />
-                  </PriceAlertsProvider>
-                </OnboardingProvider>
-              </VaultProvider>
-            </UserReviewsProvider>
-          </FavoritesProvider>
-        </VaultSealProvider>
+        <CurrencyProvider>
+          <VaultSealProvider>
+            <FavoritesProvider>
+              <UserReviewsProvider>
+                <VaultProvider>
+                  <OnboardingProvider>
+                    <PriceAlertsProvider>
+                      <AppShell />
+                    </PriceAlertsProvider>
+                  </OnboardingProvider>
+                </VaultProvider>
+              </UserReviewsProvider>
+            </FavoritesProvider>
+          </VaultSealProvider>
+        </CurrencyProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

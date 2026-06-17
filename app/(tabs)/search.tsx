@@ -9,11 +9,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { listings } from '../../lib/listingsService';
 import { Listing } from '../../lib/types';
 import { getUniqueness } from '../../lib/uniqueness';
-import { formatPrice } from '../../lib/currency';
+import { formatPrice, convertPrice } from '../../lib/currency';
 import { useFavorites } from '../../lib/favorites';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { useVault } from '../../lib/vaultContext';
 import { useOnboarding } from '../../lib/onboarding';
+import { useCurrency, SUPPORTED_CURRENCIES } from '../../lib/currencyContext';
 
 // ─── reduced-motion check (web only) ──────────────────────────────────────────
 const REDUCE_MOTION =
@@ -145,6 +146,7 @@ const AMENITY_OPTS: { label: string; search: string }[] = [
 const WM_LETTERS = 'VAULTED'.split('');
 
 export default function SearchScreen() {
+  const { displayCurrency } = useCurrency();
   const [query,             setQuery]             = useState('');
   // Destination: city+country pair avoids ambiguity for same city name in different countries.
   const [selectedDestination, setSelectedDestination] = useState<{ city: string; country: string } | null>(null);
@@ -213,7 +215,7 @@ export default function SearchScreen() {
         if (lc && lc !== selectedContinent) return false;
       }
 
-      if (maxPrice !== null && listing.pricePerNight > maxPrice) return false;
+      if (maxPrice !== null && convertPrice(listing.pricePerNight, listing.currency, displayCurrency) > maxPrice) return false;
       if (selectedType && listing.propertyType !== selectedType) return false;
 
       // Guests: listing must accommodate at least minGuests people.
@@ -267,14 +269,14 @@ export default function SearchScreen() {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'rarity':     return getUniqueness(b).score - getUniqueness(a).score;
-        case 'price_asc':  return a.pricePerNight - b.pricePerNight;
-        case 'price_desc': return b.pricePerNight - a.pricePerNight;
+        case 'price_asc':  return convertPrice(a.pricePerNight, a.currency, displayCurrency) - convertPrice(b.pricePerNight, b.currency, displayCurrency);
+        case 'price_desc': return convertPrice(b.pricePerNight, b.currency, displayCurrency) - convertPrice(a.pricePerNight, a.currency, displayCurrency);
         case 'rating':     return b.rating - a.rating;
       }
     });
 
     return filtered;
-  }, [query, selectedDestination, selectedContinent, maxPrice, selectedType, minGuests, minBedrooms, selectedAmenities, minRarity, sortBy, selectedVibes]);
+  }, [query, selectedDestination, selectedContinent, maxPrice, selectedType, minGuests, minBedrooms, selectedAmenities, minRarity, sortBy, selectedVibes, displayCurrency]);
 
   // Badge count: number of active filter groups inside the sheet.
   const filterCount = useMemo(() => [
@@ -749,6 +751,9 @@ function FilterSheet({
               </ScrollView>
             </SheetSection>
 
+            {/* DISPLAY CURRENCY */}
+            <CurrencySheetSection />
+
           </ScrollView>
 
           {/* Sheet footer */}
@@ -779,10 +784,35 @@ function SheetSection({ title, children }: { title: string; children: React.Reac
   );
 }
 
+function CurrencySheetSection() {
+  const { displayCurrency, setDisplayCurrency } = useCurrency();
+  return (
+    <SheetSection title="DISPLAY CURRENCY">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+        {SUPPORTED_CURRENCIES.map((c) => {
+          const active = displayCurrency === c.code;
+          return (
+            <Pressable
+              key={c.code}
+              onPress={() => setDisplayCurrency(c.code)}
+              style={[styles.chip, active && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {c.code} {c.symbol}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </SheetSection>
+  );
+}
+
 // ─── Hero listing (first result, full-width) ───────────────────────────────────
 function HeroListing({ listing, number }: { listing: Listing; number: number }) {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { displayCurrency } = useCurrency();
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
@@ -818,7 +848,7 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
               <View style={styles.heroMeta}>
                 <Text style={styles.heroRarity}>◆ {uniqueness.score}/100</Text>
                 <Text style={styles.heroPrice}>
-                  {formatPrice(listing.pricePerNight, listing.currency)}
+                  {formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}
                   <Text style={styles.heroUnit}> /night</Text>
                 </Text>
               </View>
@@ -842,6 +872,7 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
 function EditorialRow({ listing, number }: { listing: Listing; number: number }) {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { displayCurrency } = useCurrency();
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
@@ -877,7 +908,7 @@ function EditorialRow({ listing, number }: { listing: Listing; number: number })
             <View style={styles.rowMeta}>
               <Text style={styles.rowRarity}>◆ {uniqueness.score}</Text>
               <Text style={styles.rowPrice}>
-                {formatPrice(listing.pricePerNight, listing.currency)}
+                {formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}
                 <Text style={styles.rowUnit}>/nt</Text>
               </Text>
             </View>

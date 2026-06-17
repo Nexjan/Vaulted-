@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { listings } from '../../lib/listingsService';
 import { sortByBestDeal } from '../../lib/pricing';
 import { formatPrice } from '../../lib/currency';
+import { useCurrency } from '../../lib/currencyContext';
 import { useFavorites } from '../../lib/favorites';
 import { SkeletonBlock } from '../../components/Skeleton';
 
@@ -34,6 +35,7 @@ interface DealItem {
 function DealRow({ item, index }: { item: DealItem; index: number }) {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { displayCurrency } = useCurrency();
   const imgOpacity = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
   const { percentDiff, tier, comparableAverage } = item.priceComparison;
   const savings = Math.round(Math.abs(percentDiff));
@@ -70,12 +72,12 @@ function DealRow({ item, index }: { item: DealItem; index: number }) {
                 <Text style={styles.savingsText}>{savings}% BELOW AVG</Text>
               </View>
             ) : (
-              <Text style={styles.avgText}>{formatPrice(Math.round(comparableAverage), item.currency)} avg</Text>
+              <Text style={styles.avgText}>{formatPrice(Math.round(comparableAverage), item.currency, displayCurrency)} avg</Text>
             )}
           </View>
         </View>
         <View style={styles.rowRight}>
-          <Text style={styles.rowPrice}>{formatPrice(item.pricePerNight, item.currency)}<Text style={styles.rowUnit}>/nt</Text></Text>
+          <Text style={styles.rowPrice}>{formatPrice(item.pricePerNight, item.currency, displayCurrency)}<Text style={styles.rowUnit}>/nt</Text></Text>
           <Pressable
             onPress={(e) => { e.stopPropagation(); toggleFavorite(item.id); }}
             hitSlop={8}
