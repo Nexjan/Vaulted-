@@ -13,7 +13,7 @@ import { supabase } from '../../lib/supabase';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 // Update LEGAL_BASE to your real domain once legal pages exist
-const LEGAL_BASE = 'https://vaulted.app';
+const LEGAL_BASE = 'https://vaultedstays.com';
 
 const BG      = '#0A0A0A';
 const TEXT    = '#F5F3EF';

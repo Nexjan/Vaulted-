@@ -48,7 +48,7 @@ function SharePanel({ vault, svLoading, saving, error, setPublic }: SharePanelPr
   const shareUrl = vault?.slug
     ? (typeof window !== 'undefined'
         ? `${window.location.origin}/vault/${vault.slug}`
-        : `vaulted.app/vault/${vault.slug}`)
+        : `https://vaultedstays.com/vault/${vault.slug}`)
     : null;
 
   const handleToggle = () => setPublic(!isPublic);
