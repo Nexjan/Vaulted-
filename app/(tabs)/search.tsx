@@ -15,6 +15,7 @@ import { SkeletonBlock } from '../../components/Skeleton';
 import { useVault } from '../../lib/vaultContext';
 import { useOnboarding } from '../../lib/onboarding';
 import { useCurrency, SUPPORTED_CURRENCIES } from '../../lib/currencyContext';
+import { CATEGORIES, Category, getCategoryForType } from '../../lib/categories';
 
 // ─── reduced-motion check (web only) ──────────────────────────────────────────
 const REDUCE_MOTION =
@@ -164,6 +165,7 @@ export default function SearchScreen() {
   const [minRarity,         setMinRarity]         = useState<number | null>(null);
   const [sortBy,            setSortBy]            = useState<SortValue>('rarity');
   const [selectedVibes,     setSelectedVibes]     = useState<VibeId[]>([]);
+  const [selectedCategory,  setSelectedCategory]  = useState<Category>('All');
   const [sheetVisible,      setSheetVisible]      = useState(false);
 
   // Destinations: unique {city, country} pairs from live listing data — no hardcoding.
@@ -204,6 +206,8 @@ export default function SearchScreen() {
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = listings.filter((listing) => {
+      if (selectedCategory !== 'All' && getCategoryForType(listing.propertyType) !== selectedCategory) return false;
+
       if (
         selectedDestination &&
         (listing.city !== selectedDestination.city || listing.country !== selectedDestination.country)
@@ -276,7 +280,7 @@ export default function SearchScreen() {
     });
 
     return filtered;
-  }, [query, selectedDestination, selectedContinent, maxPrice, selectedType, minGuests, minBedrooms, selectedAmenities, minRarity, sortBy, selectedVibes, displayCurrency]);
+  }, [query, selectedCategory, selectedDestination, selectedContinent, maxPrice, selectedType, minGuests, minBedrooms, selectedAmenities, minRarity, sortBy, selectedVibes, displayCurrency]);
 
   // Badge count: number of active filter groups inside the sheet.
   const filterCount = useMemo(() => [
@@ -290,7 +294,7 @@ export default function SearchScreen() {
     minRarity !== null,
   ].filter(Boolean).length, [selectedDestination, selectedContinent, maxPrice, selectedType, minGuests, minBedrooms, selectedAmenities, minRarity]);
 
-  const hasFilters = !!(query.trim() || selectedVibes.length > 0 || filterCount > 0);
+  const hasFilters = !!(query.trim() || selectedVibes.length > 0 || filterCount > 0 || selectedCategory !== 'All');
 
   const toggleVibe    = (id: VibeId) =>
     setSelectedVibes((p) => p.includes(id) ? p.filter((v) => v !== id) : [...p, id]);
@@ -351,6 +355,7 @@ export default function SearchScreen() {
 
   const clearAll = () => {
     setQuery('');
+    setSelectedCategory('All');
     setSelectedDestination(null);
     setSelectedContinent(null);
     setMaxPrice(null);
@@ -406,6 +411,28 @@ export default function SearchScreen() {
             )}
           </View>
         </View>
+
+        {/* ── Category pills ── */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryRow}
+        >
+          {CATEGORIES.map((cat) => {
+            const active = selectedCategory === cat;
+            return (
+              <Pressable
+                key={cat}
+                onPress={() => setSelectedCategory(cat)}
+                style={[styles.categoryPill, active && styles.categoryPillActive]}
+              >
+                <Text style={[styles.categoryPillText, active && styles.categoryPillTextActive]}>
+                  {cat.toUpperCase()}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
         {/* ── Slim bar ── */}
         <View style={styles.slimBar}>
@@ -466,7 +493,11 @@ export default function SearchScreen() {
         {results.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyLabel}>NO STAYS MATCH</Text>
-            <Text style={styles.emptyHint}>Try a different vibe or clear some filters.</Text>
+            <Text style={styles.emptyHint}>
+              {selectedCategory !== 'All'
+                ? `No ${selectedCategory.toLowerCase()} match your filters — try another category or clear all.`
+                : 'Try a different vibe or clear some filters.'}
+            </Text>
           </View>
         ) : (
           <>
@@ -947,6 +978,34 @@ const styles = StyleSheet.create({
   headerLabel: { fontSize: 9, fontWeight: '700', color: GOLD, letterSpacing: 2.5 },
   headerLine:  { flex: 1, height: 1, backgroundColor: DIVIDER },
   clearAll:    { fontSize: 9, fontWeight: '700', color: MUTED, letterSpacing: 2, textDecorationLine: 'underline' },
+
+  // Category pills
+  categoryRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
+    gap: 8,
+  },
+  categoryPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: GOLD,
+    borderRadius: 1,
+  },
+  categoryPillActive: {
+    backgroundColor: GOLD,
+  },
+  categoryPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: GOLD,
+    letterSpacing: 2,
+  },
+  categoryPillTextActive: {
+    color: BG,
+  },
 
   // Slim bar
   slimBar: { paddingHorizontal: 20, paddingBottom: 4 },
