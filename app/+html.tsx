@@ -22,7 +22,11 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* CJ affiliate tracking — loads after app content */}
+        <script src="https://www.anrdoezrs.net/am/101802713/include/allCj/impressions/page/am.js" />
+      </body>
     </html>
   );
 }

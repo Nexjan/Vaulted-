@@ -18,6 +18,7 @@ const PROPERTY_TYPE_RARITY: Record<string, number> = {
   'Geodesic Dome': 8,
   Treehouse: 8,
   'Converted Church': 8,
+  Tent: 9,
   Igloo: 9,
   'Cave House': 9,
   'Castle Tower': 9,
