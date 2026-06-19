@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { PriceHistory } from '../lib/priceHistory';
-import { formatPrice } from '../lib/currency';
+
 
 const TRACK_HEIGHT = 96;
 const GOLD = '#C8A86B';
@@ -50,7 +50,7 @@ export function PriceHistoryChart({ history, currency = 'USD' }: Props) {
 
           return (
             <View key={point.label} style={styles.column}>
-              <Text style={[styles.value, isLatest && styles.valueLatest]}>{formatPrice(point.price, currency)}</Text>
+              <Text style={[styles.value, isLatest && styles.valueLatest]}>—</Text>
               <View style={styles.track}>
                 <View style={[styles.bar, { height: barHeight }, isLatest && styles.barLatest]} />
               </View>

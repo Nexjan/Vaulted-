@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { listings } from '../../lib/listingsService';
 import { Listing } from '../../lib/types';
 import { getUniqueness } from '../../lib/uniqueness';
-import { formatPrice, convertPrice } from '../../lib/currency';
+import { convertPrice } from '../../lib/currency';
 import { useFavorites } from '../../lib/favorites';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { useVault } from '../../lib/vaultContext';
@@ -843,7 +843,6 @@ function CurrencySheetSection() {
 function HeroListing({ listing, number }: { listing: Listing; number: number }) {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { displayCurrency } = useCurrency();
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
@@ -878,10 +877,7 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
               </Text>
               <View style={styles.heroMeta}>
                 <Text style={styles.heroRarity}>◆ {uniqueness.score}/100</Text>
-                <Text style={styles.heroPrice}>
-                  {formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}
-                  <Text style={styles.heroUnit}> /night</Text>
-                </Text>
+                <Text style={styles.heroPrice}>See current rates</Text>
               </View>
             </View>
             <Pressable
@@ -903,7 +899,6 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
 function EditorialRow({ listing, number }: { listing: Listing; number: number }) {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { displayCurrency } = useCurrency();
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
@@ -938,10 +933,7 @@ function EditorialRow({ listing, number }: { listing: Listing; number: number })
             </Text>
             <View style={styles.rowMeta}>
               <Text style={styles.rowRarity}>◆ {uniqueness.score}</Text>
-              <Text style={styles.rowPrice}>
-                {formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}
-                <Text style={styles.rowUnit}>/nt</Text>
-              </Text>
+              <Text style={styles.rowPrice}>See current rates</Text>
             </View>
           </View>
           <Pressable
