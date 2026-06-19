@@ -7,8 +7,6 @@ import { listings } from '../../lib/listingsService';
 import { useFavorites } from '../../lib/favorites';
 import { getUniqueness } from '../../lib/uniqueness';
 import { Listing } from '../../lib/types';
-import { formatPrice, convertPrice } from '../../lib/currency';
-import { useCurrency } from '../../lib/currencyContext';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { usePriceAlerts, getPriceDrop, PriceDrop } from '../../lib/priceAlerts';
 import { useAuth } from '../../lib/auth';
@@ -135,25 +133,36 @@ function SharePanel({ vault, svLoading, saving, error, setPublic }: SharePanelPr
 function VaultCard({ listing, index, drop }: { listing: Listing; index: number; drop: PriceDrop | null }) {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { displayCurrency } = useCurrency();
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
 
+  // Entrance: scale + opacity (native driver)
   const entranceScale = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0.93)).current;
   const entranceOpacity = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
+
+  // 3D tilt + glow (non-native driver)
   const tiltX = useRef(new Animated.Value(0)).current;
   const tiltY = useRef(new Animated.Value(0)).current;
   const glowOpacity = useRef(new Animated.Value(0)).current;
+
+  // Image fade (native driver)
   const imgOpacity = useRef(new Animated.Value(REDUCE_MOTION ? 1 : 0)).current;
 
   useEffect(() => {
     if (REDUCE_MOTION) return;
     Animated.parallel([
       Animated.spring(entranceScale, {
-        toValue: 1, delay: index * 60, tension: 120, friction: 8, useNativeDriver: true,
+        toValue: 1,
+        delay: index * 60,
+        tension: 120,
+        friction: 8,
+        useNativeDriver: true,
       }),
       Animated.timing(entranceOpacity, {
-        toValue: 1, delay: index * 60, duration: 280, useNativeDriver: true,
+        toValue: 1,
+        delay: index * 60,
+        duration: 280,
+        useNativeDriver: true,
       }),
     ]).start();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -190,8 +199,10 @@ function VaultCard({ listing, index, drop }: { listing: Listing; index: number; 
       >
         <Animated.View style={[styles.card, { transform: [{ perspective: 600 }, { rotateX }, { rotateY }] }]}>
 
+          {/* Gold accent bar */}
           <View style={[styles.accentBar, drop && styles.accentBarDrop]} />
 
+          {/* Image */}
           <View style={styles.imageWrap}>
             <SkeletonBlock style={StyleSheet.absoluteFill} />
             <Animated.Image
@@ -213,6 +224,7 @@ function VaultCard({ listing, index, drop }: { listing: Listing; index: number; 
             )}
           </View>
 
+          {/* Body */}
           <View style={styles.cardBody}>
             <Text style={styles.cardTitle} numberOfLines={1}>{listing.name}</Text>
             <Text style={styles.cardLocation}>
@@ -220,18 +232,7 @@ function VaultCard({ listing, index, drop }: { listing: Listing; index: number; 
             </Text>
             <View style={styles.cardMeta}>
               <Text style={styles.cardRarity}>◆ {uniqueness.score}</Text>
-              {drop ? (
-                <View style={styles.priceGroup}>
-                  <Text style={styles.cardPriceDrop}>
-                    {formatPrice(drop.live, listing.currency, displayCurrency)}<Text style={styles.cardUnit}>/nt</Text>
-                  </Text>
-                  <Text style={styles.priceWas}>{formatPrice(drop.lastSeen, listing.currency, displayCurrency)}</Text>
-                </View>
-              ) : (
-                <Text style={styles.cardPrice}>
-                  {formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}<Text style={styles.cardUnit}>/nt</Text>
-                </Text>
-              )}
+              <Text style={styles.cardPrice}>See current rates</Text>
               <Pressable
                 onPress={(e) => { e.stopPropagation(); toggleFavorite(listing.id); }}
                 hitSlop={8}
@@ -242,6 +243,7 @@ function VaultCard({ listing, index, drop }: { listing: Listing; index: number; 
             </View>
           </View>
 
+          {/* Gold glow edge on tilt */}
           <Animated.View pointerEvents="none" style={[styles.cardGlow, { opacity: glowOpacity }]} />
 
         </Animated.View>
@@ -254,7 +256,6 @@ export default function SavedScreen() {
   const { favoriteIds, isLoaded } = useFavorites();
   const { alerts, recordPrice, isLoaded: alertsLoaded } = usePriceAlerts();
   const { vault: sharedVault, loading: svLoading, saving: svSaving, error: svError, setPublic, refresh: refreshVault } = useSharedVault();
-  const { displayCurrency } = useCurrency();
   const [refreshing, setRefreshing] = useState(false);
 
   const vaulted = useMemo(
@@ -262,16 +263,13 @@ export default function SavedScreen() {
     [favoriteIds],
   );
 
-  const totalValue = useMemo(
-    () => vaulted.reduce((sum, l) => sum + convertPrice(l.pricePerNight, l.currency, displayCurrency), 0),
-    [vaulted, displayCurrency],
-  );
-
+  // Record base price the first time each item is seen in the vault
   useEffect(() => {
     if (!alertsLoaded) return;
     vaulted.forEach((listing) => recordPrice(listing.id, listing.pricePerNight));
   }, [vaulted, alertsLoaded]);
 
+  // Compute price drops for display
   const priceDrops = useMemo<Record<string, PriceDrop | null>>(() => {
     if (!alertsLoaded) return {};
     return Object.fromEntries(
@@ -305,6 +303,7 @@ export default function SavedScreen() {
         }
       >
 
+        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.wordmark}>THE{'\n'}VAULT</Text>
           <View style={styles.statsRow}>
@@ -314,12 +313,13 @@ export default function SavedScreen() {
             </View>
             <View style={styles.statSep} />
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{formatPrice(totalValue, displayCurrency)}</Text>
+              <Text style={styles.statValue}>See current rates</Text>
               <Text style={styles.statLabel}>COMBINED / NIGHT</Text>
             </View>
           </View>
         </View>
 
+        {/* Share vault panel (logged-in only) */}
         <SharePanel
           vault={sharedVault}
           svLoading={svLoading}
@@ -330,6 +330,7 @@ export default function SavedScreen() {
 
         <View style={styles.divider} />
 
+        {/* Price-drop banner */}
         {anyDrops && isLoaded && (
           <View style={styles.dropBanner}>
             <Ionicons name="trending-down" size={13} color={GOLD} />
@@ -337,6 +338,7 @@ export default function SavedScreen() {
           </View>
         )}
 
+        {/* Cards or empty state */}
         {isLoaded && vaulted.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="lock-closed-outline" size={36} color={GOLD} style={styles.emptyIcon} />
@@ -362,110 +364,360 @@ export default function SavedScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG },
-  scroll: { paddingBottom: 48 },
+  container: {
+    flex: 1,
+    backgroundColor: BG,
+  },
+  scroll: {
+    paddingBottom: 48,
+  },
 
-  header: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 20 },
+  // Header
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 20,
+  },
   wordmark: {
-    fontSize: 56, fontWeight: '900', color: TEXT,
-    letterSpacing: -2, lineHeight: 58, fontFamily: 'Georgia',
+    fontSize: 56,
+    fontWeight: '900',
+    color: TEXT,
+    letterSpacing: -2,
+    lineHeight: 58,
+    fontFamily: 'Georgia',
   },
   statsRow: {
-    marginTop: 18, flexDirection: 'row',
-    borderWidth: 1, borderColor: DIVIDER, borderRadius: 2,
+    marginTop: 18,
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: DIVIDER,
+    borderRadius: 2,
   },
-  statBox: { flex: 1, paddingVertical: 14, paddingHorizontal: 16, alignItems: 'center' },
+  statBox: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
   statValue: {
-    fontSize: 24, fontWeight: '900', color: GOLD,
-    fontFamily: 'Georgia', letterSpacing: -0.5,
+    fontSize: 24,
+    fontWeight: '900',
+    color: GOLD,
+    fontFamily: 'Georgia',
+    letterSpacing: -0.5,
   },
-  statLabel: { marginTop: 4, fontSize: 8, fontWeight: '700', color: MUTED, letterSpacing: 2 },
-  statSep: { width: 1, backgroundColor: DIVIDER },
+  statLabel: {
+    marginTop: 4,
+    fontSize: 8,
+    fontWeight: '700',
+    color: MUTED,
+    letterSpacing: 2,
+  },
+  statSep: {
+    width: 1,
+    backgroundColor: DIVIDER,
+  },
 
-  divider: { height: 1, backgroundColor: DIVIDER },
+  divider: {
+    height: 1,
+    backgroundColor: DIVIDER,
+  },
 
+  // Price-drop banner
   dropBanner: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: DIVIDER,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: DIVIDER,
     backgroundColor: 'rgba(200,168,107,0.07)',
   },
-  dropBannerText: { fontSize: 12, color: GOLD, fontWeight: '600', letterSpacing: 0.2 },
+  dropBannerText: {
+    fontSize: 12,
+    color: GOLD,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
 
-  cards: { paddingHorizontal: 20, paddingTop: 20, gap: 16 },
+  // Cards layout
+  cards: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    gap: 16,
+  },
 
+  // VaultCard
   cardOuter: {},
   card: {
-    backgroundColor: SURFACE, borderWidth: 1,
-    borderColor: 'rgba(200,168,107,0.14)', overflow: 'hidden',
+    backgroundColor: SURFACE,
+    borderWidth: 1,
+    borderColor: 'rgba(200,168,107,0.14)',
+    overflow: 'hidden',
   },
-  accentBar: { height: 2, backgroundColor: GOLD },
-  accentBarDrop: { backgroundColor: '#5DA87A' },
-  imageWrap: { height: 175, backgroundColor: SURFACE },
-  cardImage: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  accentBar: {
+    height: 2,
+    backgroundColor: GOLD,
+  },
+  accentBarDrop: {
+    backgroundColor: '#5DA87A',
+  },
+  imageWrap: {
+    height: 175,
+    backgroundColor: SURFACE,
+  },
+  cardImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   serialTag: {
-    position: 'absolute', bottom: 10, left: 12,
-    backgroundColor: 'rgba(10,10,10,0.7)', paddingHorizontal: 8, paddingVertical: 4,
+    position: 'absolute',
+    bottom: 10,
+    left: 12,
+    backgroundColor: 'rgba(10,10,10,0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  serialText: { fontSize: 8, fontWeight: '700', color: GOLD, letterSpacing: 2, fontFamily: 'Georgia' },
+  serialText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: GOLD,
+    letterSpacing: 2,
+    fontFamily: 'Georgia',
+  },
   dropBadge: {
-    position: 'absolute', top: 10, right: 12,
+    position: 'absolute',
+    top: 10,
+    right: 12,
     backgroundColor: 'rgba(10,10,10,0.82)',
-    borderWidth: 1, borderColor: '#5DA87A', paddingHorizontal: 8, paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#5DA87A',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  dropBadgeText: { fontSize: 8, fontWeight: '700', color: '#5DA87A', letterSpacing: 1.5 },
-  cardBody: { padding: 14 },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: TEXT, letterSpacing: -0.3, fontFamily: 'Georgia' },
-  cardLocation: { marginTop: 5, fontSize: 9, fontWeight: '600', color: MUTED, letterSpacing: 1.5 },
-  cardMeta: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cardRarity: { fontSize: 11, fontWeight: '700', color: GOLD, letterSpacing: 0.5 },
-  cardPrice: { flex: 1, fontSize: 15, fontWeight: '700', color: TEXT, textAlign: 'right' },
-  cardUnit: { fontSize: 10, fontWeight: '400', color: MUTED },
-  priceGroup: { flex: 1, alignItems: 'flex-end', gap: 2 },
-  cardPriceDrop: { fontSize: 15, fontWeight: '700', color: '#5DA87A' },
-  priceWas: { fontSize: 10, color: MUTED, textDecorationLine: 'line-through' },
-  heartBtn: { padding: 4 },
+  dropBadgeText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#5DA87A',
+    letterSpacing: 1.5,
+  },
+  cardBody: {
+    padding: 14,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: TEXT,
+    letterSpacing: -0.3,
+    fontFamily: 'Georgia',
+  },
+  cardLocation: {
+    marginTop: 5,
+    fontSize: 9,
+    fontWeight: '600',
+    color: MUTED,
+    letterSpacing: 1.5,
+  },
+  cardMeta: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  cardRarity: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: GOLD,
+    letterSpacing: 0.5,
+  },
+  cardPrice: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    color: TEXT,
+    textAlign: 'right',
+  },
+  cardUnit: {
+    fontSize: 10,
+    fontWeight: '400',
+    color: MUTED,
+  },
+  priceGroup: {
+    flex: 1,
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  cardPriceDrop: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#5DA87A',
+  },
+  priceWas: {
+    fontSize: 10,
+    color: MUTED,
+    textDecorationLine: 'line-through',
+  },
+  heartBtn: {
+    padding: 4,
+  },
   cardGlow: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 2, borderColor: 'rgba(200,168,107,0.65)',
+    borderWidth: 2,
+    borderColor: 'rgba(200,168,107,0.65)',
   },
 
-  empty: { paddingTop: 80, paddingHorizontal: 20, alignItems: 'center' },
-  emptyIcon: { marginBottom: 16 },
-  emptyTitle: { fontSize: 10, fontWeight: '700', color: MUTED, letterSpacing: 2.5 },
-  emptyHint: { marginTop: 12, fontSize: 13, color: MUTED, textAlign: 'center', lineHeight: 20, fontStyle: 'italic' },
+  // Empty state
+  empty: {
+    paddingTop: 80,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  emptyIcon: {
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: MUTED,
+    letterSpacing: 2.5,
+  },
+  emptyHint: {
+    marginTop: 12,
+    fontSize: 13,
+    color: MUTED,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontStyle: 'italic',
+  },
 });
 
 const sp = StyleSheet.create({
   container: {
-    marginHorizontal: 20, marginTop: 18, marginBottom: 4,
-    borderWidth: 1, borderColor: DIVIDER,
+    marginHorizontal: 20,
+    marginTop: 18,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: DIVIDER,
   },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
-  toggleLabel: { fontSize: 9, fontWeight: '700', color: TEXT, letterSpacing: 2 },
-  toggleSub: { marginTop: 4, fontSize: 11, color: MUTED, fontStyle: 'italic' },
-  pill: { paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: MUTED },
-  pillOn: { borderColor: GOLD, backgroundColor: 'rgba(200,168,107,0.08)' },
-  pillText: { fontSize: 8, fontWeight: '700', color: MUTED, letterSpacing: 2 },
-  pillTextOn: { color: GOLD },
-  errorRow: { paddingHorizontal: 16, paddingBottom: 12, borderTopWidth: 1, borderTopColor: DIVIDER, paddingTop: 12 },
-  errorText: { fontSize: 10, color: '#E05C5C', letterSpacing: 0.5 },
-  expanded: { borderTopWidth: 1, borderTopColor: DIVIDER, padding: 16 },
-  fieldLabel: { fontSize: 8, fontWeight: '700', color: MUTED, letterSpacing: 2, marginBottom: 8 },
-  nameRow: { flexDirection: 'row', gap: 8 },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  toggleLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: TEXT,
+    letterSpacing: 2,
+  },
+  toggleSub: {
+    marginTop: 4,
+    fontSize: 11,
+    color: MUTED,
+    fontStyle: 'italic',
+  },
+  pill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: MUTED,
+  },
+  pillOn: {
+    borderColor: GOLD,
+    backgroundColor: 'rgba(200,168,107,0.08)',
+  },
+  pillText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: MUTED,
+    letterSpacing: 2,
+  },
+  pillTextOn: {
+    color: GOLD,
+  },
+  errorRow: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+    borderTopColor: DIVIDER,
+    paddingTop: 12,
+  },
+  errorText: {
+    fontSize: 10,
+    color: '#E05C5C',
+    letterSpacing: 0.5,
+  },
+  expanded: {
+    borderTopWidth: 1,
+    borderTopColor: DIVIDER,
+    padding: 16,
+  },
+  fieldLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: MUTED,
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   nameInput: {
-    flex: 1, height: 38, borderWidth: 1, borderColor: DIVIDER,
-    paddingHorizontal: 12, color: TEXT, fontSize: 13, backgroundColor: '#0D0D0D',
+    flex: 1,
+    height: 38,
+    borderWidth: 1,
+    borderColor: DIVIDER,
+    paddingHorizontal: 12,
+    color: TEXT,
+    fontSize: 13,
+    backgroundColor: '#0D0D0D',
   },
-  saveBtn: { paddingHorizontal: 14, height: 38, justifyContent: 'center', borderWidth: 1, borderColor: GOLD },
-  saveBtnText: { fontSize: 8, fontWeight: '700', color: GOLD, letterSpacing: 2 },
-  linkRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: DIVIDER, overflow: 'hidden' },
-  linkText: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 11, color: MUTED },
+  saveBtn: {
+    paddingHorizontal: 14,
+    height: 38,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: GOLD,
+  },
+  saveBtnText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: GOLD,
+    letterSpacing: 2,
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: DIVIDER,
+    overflow: 'hidden',
+  },
+  linkText: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 11,
+    color: MUTED,
+  },
   copyBtn: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 10,
-    borderLeftWidth: 1, borderLeftColor: DIVIDER,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderLeftWidth: 1,
+    borderLeftColor: DIVIDER,
     backgroundColor: 'rgba(200,168,107,0.06)',
   },
-  copyBtnText: { fontSize: 8, fontWeight: '700', color: GOLD, letterSpacing: 2 },
+  copyBtnText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: GOLD,
+    letterSpacing: 2,
+  },
 });

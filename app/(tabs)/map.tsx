@@ -8,8 +8,6 @@ import { CITY_COORDINATES, fitProjection } from '../../lib/geo';
 import { useFavorites } from '../../lib/favorites';
 import { getUniqueness } from '../../lib/uniqueness';
 import { Listing } from '../../lib/types';
-import { formatPrice, convertPrice } from '../../lib/currency';
-import { useCurrency } from '../../lib/currencyContext';
 
 const BG = '#0A0A0A';
 const TEXT = '#F5F3EF';
@@ -34,7 +32,6 @@ export default function MapScreen() {
   const [mapWidth, setMapWidth] = useState(0);
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { displayCurrency } = useCurrency();
 
   const pins = useMemo<CityPin[]>(() => {
     const cities = Array.from(new Set(listings.map((listing) => listing.city)));
@@ -129,11 +126,7 @@ export default function MapScreen() {
               <View>
                 <Text style={styles.cityName}>{selectedCity.toUpperCase()}</Text>
                 <Text style={styles.cityMeta}>
-                  {selectedListings.length} {selectedListings.length === 1 ? 'stay' : 'stays'} · avg{' '}
-                  {formatPrice(
-                    selectedListings.reduce((sum, l) => sum + convertPrice(l.pricePerNight, l.currency, displayCurrency), 0) / (selectedListings.length || 1),
-                    displayCurrency,
-                  )}/night
+                  {selectedListings.length} {selectedListings.length === 1 ? 'stay' : 'stays'} · See current rates
                 </Text>
               </View>
               <Pressable onPress={() => setSelectedCity(null)} hitSlop={8} style={styles.clearBtn}>
@@ -170,7 +163,6 @@ function MapListingRow({
   isFavorite: (id: string) => boolean;
   toggleFavorite: (id: string) => void;
 }) {
-  const { displayCurrency } = useCurrency();
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
@@ -188,7 +180,7 @@ function MapListingRow({
           <Text style={styles.rowLocation}>{listing.propertyType.toUpperCase()}</Text>
           <View style={styles.rowMeta}>
             <Text style={styles.rowRarity}>◆ {uniqueness.score}</Text>
-            <Text style={styles.rowPrice}>{formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}<Text style={styles.rowUnit}>/nt</Text></Text>
+            <Text style={styles.rowPrice}>See current rates</Text>
           </View>
         </View>
         <Pressable

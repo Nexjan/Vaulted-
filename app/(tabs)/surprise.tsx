@@ -8,8 +8,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { listings } from '../../lib/listingsService';
 import { Listing } from '../../lib/types';
 import { getUniqueness } from '../../lib/uniqueness';
-import { formatPrice } from '../../lib/currency';
-import { useCurrency } from '../../lib/currencyContext';
 import { useFavorites } from '../../lib/favorites';
 import { SkeletonBlock } from '../../components/Skeleton';
 
@@ -41,7 +39,6 @@ function pick(pool: Listing[], excludeId: string | null): Listing {
 export default function SurpriseScreen() {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { displayCurrency } = useCurrency();
 
   const [listing, setListing] = useState<Listing>(() => pick(listings, null));
   const [busy, setBusy]       = useState(false);
@@ -130,10 +127,7 @@ export default function SurpriseScreen() {
           <Text style={s.title} numberOfLines={2}>{listing.name}</Text>
 
           <View style={s.priceRow}>
-            <Text style={s.price}>
-              {formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}
-              <Text style={s.priceUnit}> /night</Text>
-            </Text>
+            <Text style={s.price}>See current rates</Text>
             <Pressable onPress={() => toggleFavorite(listing.id)} hitSlop={10} style={s.heartBtn}>
               <Ionicons
                 name={saved ? 'heart' : 'heart-outline'}
