@@ -100,7 +100,7 @@ export const listings: Listing[] = [
       'https://i.ibb.co/4nsMhGWQ/Screenshot-20260619-183306-Bookingcom.jpg',
       'https://i.ibb.co/mCgR5S1g/Screenshot-20260619-183327-Bookingcom.jpg',
     ],
-    bookingUrl: 'https://www.booking.com/hotel/us/70s-retro-retreat-nevada-city.html',
+    bookingUrl: 'https://www.booking.com/hotel/us/70s-retro-retreat-nevada-city.en-us.html',
     description: 'A lovingly restored 1970s A-frame tucked into the California pines. Teal wood-panelled ceilings, vintage tufted furniture, sun-filled rooms, and a forest deck for open-air dining — midcentury character with modern comfort.',
     source: 'booking.com',
   },
