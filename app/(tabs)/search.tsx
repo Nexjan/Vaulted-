@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { listings } from '../../lib/listingsService';
 import { Listing } from '../../lib/types';
 import { getUniqueness } from '../../lib/uniqueness';
-import { formatPrice, convertPrice } from '../../lib/currency';
+import { convertPrice } from '../../lib/currency';
 import { useFavorites } from '../../lib/favorites';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { useVault } from '../../lib/vaultContext';
@@ -17,13 +17,13 @@ import { useOnboarding } from '../../lib/onboarding';
 import { useCurrency, SUPPORTED_CURRENCIES } from '../../lib/currencyContext';
 import { CATEGORIES, Category, getCategoryForType } from '../../lib/categories';
 
-// ─── reduced-motion check (web only) ──────────────────────────────────────────
+// ─── reduced-motion check (web only) ──────────────────────────────────────────────
 const REDUCE_MOTION =
   Platform.OS === 'web' &&
   typeof window !== 'undefined' &&
   (() => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
 
-// ─── tilt hook ─────────────────────────────────────────────────────────────────
+// ─── tilt hook ────────────────────────────────────────────────────────────────────
 function useTilt() {
   const rotX = useRef(new Animated.Value(0)).current;
   const rotY = useRef(new Animated.Value(0)).current;
@@ -312,8 +312,8 @@ export default function SearchScreen() {
     if (prefs.maxPrice !== null)   setMaxPrice(prefs.maxPrice);
   }, [prefs]);
 
-  // ── Wordmark unlock-reveal animation ──────────────────────────────────────────
-  const letterAnims = useRef(
+  // ── Wordmark unlock-reveal animation ──────────────────────────────────────────────
+const letterAnims = useRef(
     WM_LETTERS.map((_, i) => ({
       opacity: new Animated.Value(REDUCE_MOTION ? 1 : 0),
       x:       new Animated.Value(REDUCE_MOTION ? 0 : i === 0 ? 0 : -28),
@@ -545,7 +545,7 @@ export default function SearchScreen() {
   );
 }
 
-// ─── Filter sheet (bottom sheet modal) ────────────────────────────────────────
+// ─── Filter sheet (bottom sheet modal) ──────────────────────────────────────────────
 function FilterSheet({
   visible, onClose,
   destinationOptions, selectedDestination, onDestination,
@@ -730,7 +730,7 @@ function FilterSheet({
             {/* DATES / AVAILABILITY — UI shell only */}
             <SheetSection title="DATES / AVAILABILITY">
               {/*
-                DATE PICKER SHELL ─────────────────────────────────────────────────
+                DATE PICKER SHELL ─────────────────────────────────────────────────────────────────
                 Dates are stored in state but NOT applied to results filtering.
                 Wire real availability once live inventory APIs are connected:
                   Booking.com: /v2/availability endpoint
@@ -839,11 +839,10 @@ function CurrencySheetSection() {
   );
 }
 
-// ─── Hero listing (first result, full-width) ───────────────────────────────────
+// ─── Hero listing (first result, full-width) ───────────────────────────────────────────────
 function HeroListing({ listing, number }: { listing: Listing; number: number }) {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { displayCurrency } = useCurrency();
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
@@ -878,10 +877,7 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
               </Text>
               <View style={styles.heroMeta}>
                 <Text style={styles.heroRarity}>◆ {uniqueness.score}/100</Text>
-                <Text style={styles.heroPrice}>
-                  {formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}
-                  <Text style={styles.heroUnit}> /night</Text>
-                </Text>
+                <Text style={styles.heroPrice}>See current rates</Text>
               </View>
             </View>
             <Pressable
@@ -899,11 +895,10 @@ function HeroListing({ listing, number }: { listing: Listing; number: number }) 
   );
 }
 
-// ─── Editorial row (subsequent results) ───────────────────────────────────────
+// ─── Editorial row (subsequent results) ───────────────────────────────────────────────
 function EditorialRow({ listing, number }: { listing: Listing; number: number }) {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { displayCurrency } = useCurrency();
   const uniqueness = getUniqueness(listing);
   const active = isFavorite(listing.id);
   const num = String(number).padStart(2, '0');
@@ -938,10 +933,7 @@ function EditorialRow({ listing, number }: { listing: Listing; number: number })
             </Text>
             <View style={styles.rowMeta}>
               <Text style={styles.rowRarity}>◆ {uniqueness.score}</Text>
-              <Text style={styles.rowPrice}>
-                {formatPrice(listing.pricePerNight, listing.currency, displayCurrency)}
-                <Text style={styles.rowUnit}>/nt</Text>
-              </Text>
+              <Text style={styles.rowPrice}>See current rates</Text>
             </View>
           </View>
           <Pressable
@@ -958,7 +950,7 @@ function EditorialRow({ listing, number }: { listing: Listing; number: number })
   );
 }
 
-// ─── Styles ────────────────────────────────────────────────────────────────────
+// ─── Styles ──────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   scroll:    { paddingBottom: 48 },
@@ -1049,8 +1041,8 @@ const styles = StyleSheet.create({
   emptyLabel: { fontSize: 10, fontWeight: '700', color: MUTED, letterSpacing: 2.5 },
   emptyHint:  { marginTop: 10, fontSize: 13, color: MUTED, fontStyle: 'italic' },
 
-  // ── Filter sheet modal ──────────────────────────────────────────────────────
-  modalWrap: {
+  // ── Filter sheet modal ──────────────────────────────────────────────────────────────────────
+modalWrap: {
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.72)',
