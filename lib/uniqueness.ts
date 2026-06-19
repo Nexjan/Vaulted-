@@ -43,6 +43,7 @@ const RARE_TAGS = new Set([
 
 export interface UniquenessResult {
   score: number; // 0-100
+  label: string;
   reasons: string[];
 }
 
@@ -71,8 +72,9 @@ export function getUniqueness(listing: Listing): UniquenessResult {
 
   const raw = typeRarity * 7.5 + tagBonus + hiddenGemBonus; // max ~10*7.5 + 10 + 5 = 90
   const score = Math.round(Math.min(100, raw));
+  const label = score >= 90 ? 'Legendary' : score >= 75 ? 'Iconic' : score >= 60 ? 'Rare' : score >= 45 ? 'Distinct' : 'Hidden Gem';
 
-  return { score, reasons };
+  return { score, label, reasons };
 }
 
 export function sortByUniqueness(items: Listing[]): (Listing & { uniqueness: UniquenessResult })[] {

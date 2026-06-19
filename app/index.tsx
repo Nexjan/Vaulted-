@@ -523,11 +523,11 @@ const styles = StyleSheet.create({
 
   // ── Hero ──────────────────────────────────────────────────────────────────
   heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.50)',
   },
   closingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.80)',
   },
   panel: {
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
   panelLeft:  { left: 0 },
   panelRight: { right: 0 },
   panelOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.82)',
   },
   panelEdgeR: {
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
     width: 28, backgroundColor: GOLD, opacity: 0.18,
   },
   heroContent: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardImgOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.18)',
   },
   cardBadge: {
@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   cardGlow: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
     borderWidth: 1,
     borderColor: 'rgba(200,168,107,0.85)',
   },

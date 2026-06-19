@@ -237,7 +237,7 @@ export default function AccountTab() {
         await supabase.from('shared_vaults').delete().eq('user_id', user.id);
       }
       // Requires delete_user() DB function — see supabase/delete_user.sql
-      await supabase.rpc('delete_user').catch(() => {});
+      try { await supabase.rpc('delete_user'); } catch { /* ignore — function may not exist */ }
       await signOut();
       router.replace('/');
     } catch {
