@@ -27,7 +27,7 @@ function fmtDate(iso: string) {
   catch { return ''; }
 }
 
-// ─── Sub-components ──────────────────────────────────────────────
+// ─── Sub-components ──────────────────────────────────────────────────────────
 
 function Header() {
   return (
@@ -190,7 +190,7 @@ function ChangePasswordForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────
+// ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function AccountTab() {
   const router = useRouter();
@@ -237,7 +237,7 @@ export default function AccountTab() {
         await supabase.from('shared_vaults').delete().eq('user_id', user.id);
       }
       // Requires delete_user() DB function — see supabase/delete_user.sql
-      await supabase.rpc('delete_user').catch(() => {});
+      try { await supabase.rpc('delete_user'); } catch { /* ignore — function may not exist */ }
       await signOut();
       router.replace('/');
     } catch {
@@ -248,7 +248,7 @@ export default function AccountTab() {
 
   if (loading) return <View style={s.container} />;
 
-  // ── Logged out ───────────────────────────────────────────────────────
+  // ── Logged out ──────────────────────────────────────────────────────────────
   if (!user) {
     return (
       <SafeAreaView style={s.container} edges={['top']}>
@@ -271,7 +271,7 @@ export default function AccountTab() {
     );
   }
 
-  // ── Logged in ──────────────────────────────────────────────────────────
+  // ── Logged in ───────────────────────────────────────────────────────────────
   const vaultStatusLabel = vaultLoading ? '–' : (vault?.is_public ? 'PUBLIC' : 'PRIVATE');
 
   return (
@@ -450,7 +450,7 @@ export default function AccountTab() {
   );
 }
 
-// ─── Styles ────────────────────────────────────────────────
+// ─── Styles ──────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   inner: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 56 },
