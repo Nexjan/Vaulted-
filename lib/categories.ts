@@ -52,6 +52,7 @@ const PROPERTY_TYPE_CATEGORY: Record<string, Exclude<Category, 'All'>> = {
 
   // ── Cabins ──────────────────────────────────────────────────────────────────
   'A-Frame':          'Cabins',
+  'Tiny Cabin':       'Cabins',
   'Cabin':            'Cabins',
   'Log Cabin':        'Cabins',
   'Chalet':           'Cabins',
