@@ -36,6 +36,13 @@ export const listings: Listing[] = [
     bookingUrl: 'https://www.booking.com/hotel/us/under-canvas-white-mountains.en-us.html',
     description: 'A luxury glamping retreat of glowing safari-style tents set beneath the Milky Way in New Hampshire\'s White Mountains. Canvas walls, real beds, wood stoves, and an unobstructed canopy of stars.',
     source: 'booking.com',
+    quizTags: {
+      vibe: ['remote-wild'],
+      setting: ['deep-forest', 'mountains-snow'],
+      moment: ['stargazing', 'total-disconnection'],
+      group: ['romantic', 'friends'],
+      detail: ['deck-under-sky'],
+    },
   },
   {
     id: 'aurora-villa-fairbanks',
@@ -68,6 +75,13 @@ export const listings: Listing[] = [
     bookingUrl: 'https://www.booking.com/hotel/us/aurora-villa.en-us.html',
     description: 'A modern glass-walled villa set under Alaska\'s night sky in Fairbanks, designed for watching the Northern Lights from bed. Floor-to-ceiling windows, warm contemporary interiors, and an unobstructed view of the aurora.',
     source: 'booking.com',
+    quizTags: {
+      vibe: ['architectural'],
+      setting: ['under-aurora', 'mountains-snow'],
+      moment: ['stargazing', 'design-marvel'],
+      group: ['romantic', 'friends'],
+      detail: ['wall-of-glass'],
+    },
   },
   {
     id: '70s-retro-retreat-nevada-city',
@@ -103,6 +117,13 @@ export const listings: Listing[] = [
     bookingUrl: 'https://www.booking.com/hotel/us/70s-retro-retreat-nevada-city.en-us.html',
     description: 'A lovingly restored 1970s A-frame tucked into the California pines. Teal wood-panelled ceilings, vintage tufted furniture, sun-filled rooms, and a forest deck for open-air dining — midcentury character with modern comfort.',
     source: 'booking.com',
+    quizTags: {
+      vibe: ['architectural', 'remote-wild'],
+      setting: ['deep-forest', 'mountains-snow'],
+      moment: ['design-marvel', 'stargazing', 'warm-cozy'],
+      group: ['romantic', 'friends'],
+      detail: ['deck-under-sky'],
+    },
   },
   {
     id: 'lakefront-chalet-nevada-city',
@@ -132,6 +153,13 @@ export const listings: Listing[] = [
     bookingUrl: 'https://www.booking.com/hotel/us/lakefront-chalet-nevada-city.en-us.html',
     description: 'A classic wood A-frame chalet perched above the lake in the Sierra foothills. Wraparound decks over the pines, fiery sunset views, and warm timber interiors — a storybook cabin retreat surrounded by forest and water.',
     source: 'booking.com',
+    quizTags: {
+      vibe: ['cozy-retreat'],
+      setting: ['lakeside', 'mountains-snow'],
+      moment: ['warm-cozy', 'stargazing'],
+      group: ['romantic', 'friends', 'family'],
+      detail: ['deck-under-sky', 'water-doorstep'],
+    },
   },
   {
     id: 'getaway-brazos-valley',
@@ -167,6 +195,13 @@ export const listings: Listing[] = [
     bookingUrl: 'https://www.booking.com/hotel/us/getaway-brazos-valley.en-us.html',
     description: 'A minimalist tiny cabin tucked into the Texas woods, built for unplugging. Clean modern lines, a wall-sized window framing the trees, and quiet nature in every direction — a designed escape from the noise.',
     source: 'booking.com',
+    quizTags: {
+      vibe: ['remote-wild', 'cozy-retreat'],
+      setting: ['deep-forest'],
+      moment: ['total-disconnection', 'warm-cozy', 'stargazing'],
+      group: ['solo', 'romantic'],
+      detail: ['crackling-fire'],
+    },
   },
   {
     id: 'reflections-luxe-mirror-home',
@@ -205,5 +240,12 @@ export const listings: Listing[] = [
     bookingUrl: 'https://www.booking.com/hotel/us/reflections-luxe-mirror-home-near-capitol-reef.en-us.html',
     description: 'A mirror-clad luxury retreat in the red-rock desert near Capitol Reef. Its reflective glass walls dissolve into the surrounding canyon landscape by day and frame the stars by night — a piece of living architecture in one of Utah\'s most dramatic settings.',
     source: 'booking.com',
+    quizTags: {
+      vibe: ['architectural'],
+      setting: ['desert-canyon'],
+      moment: ['design-marvel', 'stargazing'],
+      group: ['romantic', 'friends'],
+      detail: ['wall-of-glass'],
+    },
   },
 ];

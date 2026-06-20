@@ -1,12 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, ReactNode, useContext, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
+import type { QuizAnswers } from './types';
 
 export type OnboardingVibeId = 'remote' | 'architectural' | 'overwater' | 'offgrid' | 'cozy' | 'views';
 
 export interface OnboardingPrefs {
   vibeIds: OnboardingVibeId[];
   maxPrice: number | null;
+  quizAnswers?: QuizAnswers;
 }
 
 const PREFS_KEY = 'vaulted:onboarding-prefs';

@@ -3,6 +3,22 @@
 // Unknown types fall back to a rarity score of 5.
 export type PropertyType = string;
 
+export interface QuizTags {
+  vibe: string[];
+  setting: string[];
+  moment: string[];
+  group: string[];
+  detail: string[];
+}
+
+export interface QuizAnswers {
+  vibe: string;
+  setting: string;
+  moment: string;
+  group: string;
+  detail: string;
+}
+
 export interface Listing {
   // ── Booking.com affiliate-aligned fields ────────────────────────────────
   id: string;
@@ -37,4 +53,5 @@ export interface Listing {
   source?: string;
   // ── Vaulted-specific fields ──────────────────────────────────────────────
   emoji: string;
+  quizTags?: QuizTags;
 }
