@@ -15,6 +15,9 @@ export const CITY_COORDINATES: Record<string, Coordinates> = {
   Edinburgh: { latitude: 55.9533, longitude: -3.1883 },
   Rovaniemi: { latitude: 66.5039, longitude: 25.7294 },
   Austin: { latitude: 30.2672, longitude: -97.7431 },
+  Dalton: { latitude: 44.3978, longitude: -71.7298 },
+  Fairbanks: { latitude: 64.8378, longitude: -147.7164 },
+  'Nevada City': { latitude: 39.2616, longitude: -121.0177 },
   'Brazos Valley': { latitude: 30.6280, longitude: -96.3344 },
 };
 
