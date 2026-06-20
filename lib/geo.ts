@@ -19,6 +19,7 @@ export const CITY_COORDINATES: Record<string, Coordinates> = {
   Fairbanks: { latitude: 64.8378, longitude: -147.7164 },
   'Nevada City': { latitude: 39.2616, longitude: -121.0177 },
   'Brazos Valley': { latitude: 30.6280, longitude: -96.3344 },
+  Torrey: { latitude: 38.2972, longitude: -111.4148 },
 };
 
 export function getCityCoordinates(city: string): Coordinates | undefined {

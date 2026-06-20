@@ -25,6 +25,7 @@ const PROPERTY_TYPE_RARITY: Record<string, number> = {
   Igloo: 9,
   'Cave House': 9,
   'Castle Tower': 9,
+  'Mirror House': 9.5,
   Lighthouse: 10,
 };
 

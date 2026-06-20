@@ -84,6 +84,7 @@ const PROPERTY_TYPE_CATEGORY: Record<string, Exclude<Category, 'All'>> = {
   'Tipi':                 'Unique Stays',
   'Tent':                 'Unique Stays',
   'Dome':                 'Unique Stays',
+  'Mirror House':         'Unique Stays',
   'Barn':                 'Unique Stays',
   'Ryokan':               'Unique Stays',
 };
